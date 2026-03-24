@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGNITE · 认知锚点系统</title>
+<style>
+:root {
+  --bg: #08080D;
+  --surface: #111118;
+  --surface2: #1A1A24;
+  --surface3: #22222E;
+  --border: rgba(255,255,255,0.06);
+  --text: #EAEAF0;
+  --text2: #9595AA;
+  --text3: #5A5A6E;
+  --accent: #7C6CF0;
+  --accent2: #9D8DF7;
+  --fire: #FF6B35;
+  --green: #2ED573;
+  --yellow: #FFC048;
+  --cyan: #00D2D3;
+  --pink: #FF6B9D;
+  --r: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  background: var(--bg); color: var(--text);
+  min-height: 100vh;
+}
+
+/* 顶部 */
+.hero {
+  text-align: center;
+  padding: 48px 24px 36px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(124,108,240,0.12) 0%, transparent 60%);
+}
+.hero h1 {
+  font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 30%, var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero p { color: var(--text2); font-size: 14px; margin-top: 8px; }
+.hero .tags { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.hero .tag {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: rgba(124,108,240,0.12); color: var(--accent2); border: 1px solid rgba(124,108,240,0.2);
+}
+
+/* 切换按钮 */
+.mode-switch {
+  max-width: 960px; margin: 0 auto; padding: 0 24px;
+  display: flex; gap: 8px;
+}
+.mode-btn {
+  padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text2); cursor: pointer;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+}
+.mode-btn:hover { background: var(--surface2); color: var(--text); }
+.mode-btn.active {
+  background: linear-gradient(135deg, var(--accent), #9580FF);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 4px 20px rgba(124,108,240,0.25);
+}
+
+/* 主内容 */
+.main { max-width: 960px; margin: 24px auto; padding: 0 24px 80px; }
+
+/* 按书浏览 */
+.book-card {
+  margin-bottom: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.book-card:hover { border-color: rgba(124,108,240,0.2); }
+.book-header {
+  padding: 20px 24px;
+  background: linear-gradient(90deg, rgba(124,108,240,0.06), transparent);
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.book-title { font-size: 18px; font-weight: 700; }
+.book-meta { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.book-grade {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: rgba(46,213,115,0.1); color: var(--green);
+}
+
+.anchor-item {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: background .15s;
+}
+.anchor-item:hover { background: var(--surface2); }
+.anchor-item:last-child { border-bottom: none; }
+
+.anchor-top {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.anchor-op {
+  padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.anchor-op.causal { background: rgba(255,107,53,0.12); color: var(--fire); }
+.anchor-op.perspective { background: rgba(124,108,240,0.12); color: var(--accent2); }
+.anchor-op.empathy { background: rgba(255,107,157,0.12); color: var(--pink); }
+.anchor-op.comparison { background: rgba(0,210,211,0.12); color: var(--cyan); }
+.anchor-op.critical { background: rgba(255,192,72,0.12); color: var(--yellow); }
+.anchor-op.modeling { background: rgba(46,213,115,0.12); color: var(--green); }
+.anchor-op.creative { background: rgba(157,141,247,0.12); color: #B8A9FF; }
+
+.intensity-bar {
+  display: flex; gap: 3px; align-items: center;
+}
+.intensity-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+.intensity-dot.active { background: var(--fire); box-shadow: 0 0 6px rgba(255,107,53,0.4); }
+
+.anchor-bloom, .anchor-solo {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  font-weight: 600; text-transform: uppercase;
+}
+.anchor-bloom { background: rgba(0,210,211,0.1); color: var(--cyan); }
+.anchor-solo { background: rgba(255,192,72,0.08); color: var(--yellow); }
+
+.anchor-comp {
+  font-size: 11px; color: var(--text3); margin-left: auto;
+}
+
+.anchor-scene {
+  font-size: 14px; color: var(--text); margin-top: 12px; line-height: 1.7;
+}
+.anchor-chapter {
+  font-size: 11px; color: var(--text3); margin-top: 4px;
+}
+.anchor-hook {
+  font-size: 13px; color: var(--accent2); margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(124,108,240,0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+}
+.anchor-why {
+  font-size: 12px; color: var(--text3); margin-top: 8px;
+}
+.anchor-tags {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;
+}
+.anchor-tag {
+  padding: 3px 10px; border-radius: 20px; font-size: 10px;
+  background: rgba(255,255,255,0.05); color: var(--text2);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* 按认知操作浏览 */
+.op-section {
+  margin-bottom: 32px;
+}
+.op-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 0; border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.op-name { font-size: 20px; font-weight: 800; }
+.op-count {
+  padding: 3px 10px; border-radius: 20px; font-size: 12px;
+  background: rgba(255,255,255,0.06); color: var(--text2);
+}
+.op-desc { font-size: 12px; color: var(--text3); }
+
+.op-anchor {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.op-anchor:last-child { border-bottom: none; }
+.op-level {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.op-level-num {
+  font-size: 28px; font-weight: 900; color: var(--fire);
+  line-height: 1;
+}
+.op-level-label { font-size: 9px; color: var(--text3); text-transform: uppercase; }
+.op-content {}
+.op-book-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.op-book-grade { font-size: 11px; color: var(--text3); }
+.op-scene { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.6; }
+.op-hook {
+  font-size: 12px; color: var(--accent2); margin-top: 8px; font-style: italic;
+}
+.op-meta {
+  display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+}
+.op-meta-tag {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  background: rgba(255,255,255,0.04); color: var(--text3);
+}
+
+/* 桥接网络 */
+.bridge-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  margin-top: 32px;
+}
+.bridge-title {
+  font-size: 18px; font-weight: 700; color: var(--cyan); margin-bottom: 20px;
+}
+.bridge-query {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.bridge-q-btn {
+  padding: 8px 16px; border-radius: 8px; font-size: 13px;
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; transition: all .2s;
+}
+.bridge-q-btn:hover { background: var(--surface3); color: var(--text); }
+.bridge-q-btn.active {
+  background: rgba(0,210,211,0.12); border-color: rgba(0,210,211,0.3);
+  color: var(--cyan);
+}
+.bridge-results { }
+.bridge-path {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px;
+}
+.bridge-path:last-child { border-bottom: none; }
+.bridge-level {
+  font-size: 20px; font-weight: 900; color: var(--fire); min-width: 32px; text-align: center;
+}
+.bridge-arrow { color: var(--cyan); font-size: 14px; }
+.bridge-book { font-weight: 600; }
+.bridge-scene-text { color: var(--text2); font-size: 12px; }
+
+.hidden { display: none; }
+
+@media (max-width: 640px) {
+  .hero h1 { font-size: 24px; }
+  .anchor-top { flex-direction: column; align-items: flex-start; }
+  .anchor-comp { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- 访问码门禁 -->
+<div id="gateOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
+  background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px">
+  <div style="font-size:28px;font-weight:800;background:linear-gradient(135deg,#fff 30%,var(--accent));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent">🧠 IGNITE</div>
+  <p style="color:var(--text2);font-size:14px">内部演示版 · 请输入访问码</p>
+  <input type="password" id="gateInput" placeholder="访问码" autofocus
+    style="width:260px;padding:14px 20px;border-radius:12px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text);font-size:16px;text-align:center;outline:none;
+    letter-spacing:4px" onkeydown="if(event.key==='Enter')checkGate()">
+  <button onclick="checkGate()" style="padding:10px 32px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,var(--accent),#9580FF);color:#fff;font-size:14px;
+    font-weight:600;cursor:pointer">进入</button>
+  <p id="gateError" style="color:#FF6B35;font-size:12px;display:none">访问码错误</p>
+</div>
+<script>
+(function(){
+  const KEY='ignite_gate_v1';
+  if(localStorage.getItem(KEY)==='ok'){
+    document.getElementById('gateOverlay').style.display='none';
+  }
+  window.checkGate=function(){
+    if(document.getElementById('gateInput').value==='ignite2026'){
+      localStorage.setItem(KEY,'ok');
+      document.getElementById('gateOverlay').style.display='none';
+    } else {
+      document.getElementById('gateError').style.display='block';
+    }
+  }
+})();
+</script>
+
+<div class="hero">
+  <h1>🧠 IGNITE · 认知锚点系统</h1>
+  <p>每本书的高阶思维地图 — 崔允漷核心素养 × Bloom认知分类 × SOLO思维深度</p>
+  <div class="tags" id="statsTags">
+    <span class="tag">📐 Bloom修订版 6层级</span>
+    <span class="tag">🔬 SOLO分类法 5层级</span>
+    <span class="tag">🎓 崔允漷核心素养</span>
+    <span class="tag">🔗 向量桥接</span>
+  </div>
+  <div class="tags" id="statsRow" style="margin-top:8px"></div>
+</div>
+
+<div class="mode-switch" style="margin-top:24px">
+  <button class="mode-btn active" data-mode="book">📖 按书浏览</button>
+  <button class="mode-btn" data-mode="op">🧩 按认知操作</button>
+  <button class="mode-btn" data-mode="bridge">🔗 思维桥接</button>
+</div>
+
+<!-- 搜索栏 -->
+<div style="max-width:960px;margin:16px auto 0;padding:0 24px">
+  <input type="text" id="searchBox" placeholder="🔍 搜索书名、作者、场景、关键词..."
+    style="width:100%;padding:12px 18px;border-radius:10px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text);font-size:14px;outline:none;
+    transition:border-color .2s" onfocus="this.style.borderColor='rgba(124,108,240,0.4)'"
+    onblur="this.style.borderColor='var(--border)'" oninput="filterBooks()">
+</div>
+
+<div class="main">
+  <div id="bookView"></div>
+  <div id="opView" class="hidden"></div>
+  <div id="bridgeView" class="hidden"></div>
+</div>
+
+<script>
+let DATA = [];
+
+// 从JSON文件加载数据
+async function loadData() {
+  try {
+    const res = await fetch('anchor_data.json');
+    const raw = await res.json();
+    DATA = raw.filter(b => b.anchors && b.anchors.length > 0);
+    const totalAnchors = DATA.reduce((s, b) => s + b.anchors.length, 0);
+    document.getElementById('statsRow').innerHTML =
+      `<span class="tag" style="background:rgba(46,213,115,0.1);color:var(--green);border-color:rgba(46,213,115,0.2)">
+        📚 ${DATA.length}本书</span>
+       <span class="tag" style="background:rgba(255,107,53,0.1);color:var(--fire);border-color:rgba(255,107,53,0.2)">
+        🧠 ${totalAnchors}个认知锚点</span>
+       <span class="tag" style="background:rgba(0,210,211,0.1);color:var(--cyan);border-color:rgba(0,210,211,0.2)">
+        📊 初中G7-G9 教育部推荐书目</span>`;
+    renderBookView();
+    renderOpView();
+    renderBridgeView();
+  } catch(e) {
+    document.getElementById('bookView').innerHTML =
+      `<p style="color:var(--fire);padding:40px;text-align:center">数据加载失败: ${e.message}</p>`;
+  }
+}
+
+// 操作名映射
+const OP_NAMES = {
+  comparison: '比较', causal: '因果', perspective: '视角采择',
+  empathy: '共情', critical: '批判', modeling: '建模', creative: '创造'
+};
+const OP_DESC = {
+  comparison: '找异同、对比分析', causal: '分析原因与结果',
+  perspective: '换位思考、多角度理解', empathy: '情感理解与共鸣',
+  critical: '质疑、评价、反思', modeling: '抽象、归纳、构建模型',
+  creative: '想象、发散、重组'
+};
+const BLOOM_NAMES = {
+  remember: '记忆', understand: '理解', apply: '应用',
+  analyze: '分析', evaluate: '评价', create: '创造'
+};
+const SOLO_NAMES = {
+  prestructural: '前结构', unistructural: '单点', multistructural: '多点',
+  relational: '关联', extended_abstract: '拓展抽象'
+};
+
+function intensityHTML(n) {
+  let dots = '';
+  for (let i = 1; i <= 5; i++) {
+    dots += `<div class="intensity-dot${i <= n ? ' active' : ''}"></div>`;
+  }
+  return `<div class="intensity-bar" title="强度 ${n}/5">${dots}</div>`;
+}
+
+// 搜索过滤
+let filteredData = null;
+function filterBooks() {
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  if (!q) { filteredData = null; renderBookView(); return; }
+  filteredData = DATA.filter(book => {
+    const bookText = [book.title, book.author, book.grade].join(' ').toLowerCase();
+    const anchorText = book.anchors.map(a =>
+      [a.scene, a.hook, a.why, a.op, OP_NAMES[a.op], ...a.bridge_vector_tags].join(' ')
+    ).join(' ').toLowerCase();
+    return bookText.includes(q) || anchorText.includes(q);
+  });
+  renderBookView();
+}
+
+function getBooks() { return filteredData || DATA; }
+
+// 按书浏览
+function renderBookView() {
+  const books = getBooks();
+  if (books.length === 0) {
+    document.getElementById('bookView').innerHTML =
+      '<p style="color:var(--text3);padding:40px;text-align:center">未找到匹配书目</p>';
+    return;
+  }
+  let html = `<p style="color:var(--text3);font-size:12px;margin-bottom:16px">
+    显示 ${books.length} 本书 · ${books.reduce((s,b) => s+b.anchors.length, 0)} 个锚点</p>`;
+  books.forEach(book => {
+    html += `<div class="book-card">
+      <div class="book-header">
+        <div>
+          <div class="book-title">📖 ${book.title}</div>
+          <div class="book-meta">${book.author || ''} · ${book.anchors.length}个认知锚点</div>
+        </div>
+        <div class="book-grade">${book.grade}</div>
+      </div>`;
+    book.anchors.forEach(a => {
+      html += `<div class="anchor-item" onclick="this.classList.toggle('expanded')">
+        <div class="anchor-top">
+          <span class="anchor-op ${a.op}">${OP_NAMES[a.op] || a.op}</span>
+          ${intensityHTML(a.intensity)}
+          <span class="anchor-bloom">Bloom:${BLOOM_NAMES[a.bloom_level] || a.bloom_level}</span>
+          <span class="anchor-solo">SOLO:${SOLO_NAMES[a.solo_level] || a.solo_level}</span>
+          <span class="anchor-comp">${a.core_competency}</span>
+        </div>
+        <div class="anchor-scene">📌 ${a.scene}</div>
+        <div class="anchor-chapter">📍 ${a.chapter_hint || ''}</div>
+        <div class="anchor-hook">💡 ${a.hook}</div>
+        <div class="anchor-why">📝 ${a.why}</div>
+        <div class="anchor-tags">
+          ${(a.bridge_vector_tags||[]).map(t => `<span class="anchor-tag">${t}</span>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('bookView').innerHTML = html;
+}
+
+// 按认知操作浏览
+function renderOpView() {
+  const opMap = {};
+  DATA.forEach(book => {
+    book.anchors.forEach(a => {
+      if (!opMap[a.op]) opMap[a.op] = [];
+      opMap[a.op].push({ ...a, bookTitle: book.title, bookGrade: book.grade });
+    });
+  });
+
+  let html = '';
+  Object.keys(opMap).sort().forEach(op => {
+    const items = opMap[op].sort((a, b) => a.intensity - b.intensity);
+    html += `<div class="op-section">
+      <div class="op-header">
+        <span class="anchor-op ${op}" style="font-size:14px;padding:6px 16px">${OP_NAMES[op] || op}</span>
+        <span class="op-name">${OP_DESC[op] || ''}</span>
+        <span class="op-count">${items.length}个锚点</span>
+      </div>`;
+    items.forEach(a => {
+      html += `<div class="op-anchor">
+        <div class="op-level">
+          <div class="op-level-num">${a.intensity}</div>
+          <div class="op-level-label">级</div>
+        </div>
+        <div class="op-content">
+          <div>
+            <span class="op-book-name">《${a.bookTitle}》</span>
+            <span class="op-book-grade">${a.bookGrade}</span>
+          </div>
+          <div class="op-scene">${a.scene}</div>
+          <div class="op-hook">💡 ${a.hook}</div>
+          <div class="op-meta">
+            <span class="op-meta-tag">Bloom:${BLOOM_NAMES[a.bloom_level]||a.bloom_level}</span>
+            <span class="op-meta-tag">SOLO:${SOLO_NAMES[a.solo_level]||a.solo_level}</span>
+            <span class="op-meta-tag">${a.core_competency}</span>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('opView').innerHTML = html;
+}
+
+// 桥接视图
+function renderBridgeView() {
+  const queryConcepts = ['视角采择', '因果推理', '生命价值', '社会批判', '建模', '共情', '比较'];
+  let html = `<div class="bridge-section">
+    <div class="bridge-title">🔗 思维桥接：输入一个概念，找到跨书的认知进阶路径</div>
+    <div class="bridge-query" id="bridgeQuery">
+      ${queryConcepts.map(c => `<button class="bridge-q-btn" onclick="queryBridge('${c}')">${c}</button>`).join('')}
+    </div>
+    <div id="bridgeResults"></div>
+  </div>`;
+  document.getElementById('bridgeView').innerHTML = html;
+}
+
+function queryBridge(concept) {
+  document.querySelectorAll('.bridge-q-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === concept);
+  });
+  const allAnchors = [];
+  DATA.forEach(book => {
+    book.anchors.forEach(a => {
+      allAnchors.push({ ...a, bookTitle: book.title, bookGrade: book.grade });
+    });
+  });
+  const matches = allAnchors.filter(a => {
+    const text = [a.op, a.hook, a.why, ...(a.bridge_vector_tags||[]), OP_NAMES[a.op]||''].join(' ').toLowerCase();
+    return text.includes(concept.toLowerCase()) ||
+           concept.includes(OP_NAMES[a.op] || '') ||
+           (a.bridge_vector_tags||[]).some(t => t.includes(concept) || concept.includes(t));
+  }).sort((a, b) => a.intensity - b.intensity);
+
+  let html = '';
+  if (matches.length === 0) {
+    html = '<p style="color:var(--text3);padding:20px">未找到匹配锚点</p>';
+  } else {
+    html = `<p style="color:var(--text2);font-size:13px;margin-bottom:16px">
+      找到 <strong style="color:var(--cyan)">${matches.length}</strong> 个相关锚点，按强度排列（渐进式推荐）</p>`;
+    matches.forEach(a => {
+      html += `<div class="bridge-path">
+        <div class="bridge-level">${a.intensity}</div>
+        <div>
+          <div>
+            <span class="bridge-book">《${a.bookTitle}》</span>
+            <span style="color:var(--text3);font-size:12px">${a.bookGrade}</span>
+            <span class="anchor-op ${a.op}" style="margin-left:8px">${OP_NAMES[a.op]}</span>
+            <span class="anchor-bloom" style="margin-left:4px">Bloom:${BLOOM_NAMES[a.bloom_level]||a.bloom_level}</span>
+          </div>
+          <div class="bridge-scene-text">${a.scene}</div>
+          <div style="color:var(--accent2);font-size:12px;margin-top:4px;font-style:italic">💡 ${a.hook}</div>
+          <div class="anchor-tags" style="margin-top:6px">
+            ${(a.bridge_vector_tags||[]).map(t => `<span class="anchor-tag">${t}</span>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('bridgeResults').innerHTML = html;
+}
+
+// 模式切换
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    document.getElementById('bookView').classList.toggle('hidden', mode !== 'book');
+    document.getElementById('opView').classList.toggle('hidden', mode !== 'op');
+    document.getElementById('bridgeView').classList.toggle('hidden', mode !== 'bridge');
+  });
+});
+
+// 启动
+loadData();
+</script>
+</body>
+</html>

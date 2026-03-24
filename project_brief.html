@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>研究方向说明 · 龚坤</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+@page { size: A4; margin: 0; }
+body {
+  font-family: 'PingFang SC','Microsoft YaHei','SimSun',serif;
+  width: 210mm; min-height: 297mm; margin: 0 auto;
+  background: #fff; color: #1a1a1a;
+  padding: 24mm 26mm 20mm;
+  font-size: 11pt; line-height: 1.8;
+}
+h1 {
+  font-size: 18pt; font-weight: 800; text-align: center;
+  margin-bottom: 2px; color: #000;
+}
+.subtitle {
+  text-align: center; font-size: 10pt; color: #555;
+  margin-bottom: 16px; padding-bottom: 10px;
+  border-bottom: 1.5px solid #333;
+}
+h2 {
+  font-size: 12pt; font-weight: 700; color: #000;
+  margin: 14px 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #ddd;
+}
+p { margin: 4px 0; text-align: justify; }
+b { color: #000; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10pt; }
+th { background: #f5f5f5; padding: 5px 8px; text-align: left; font-weight: 700; border: 1px solid #ccc; }
+td { padding: 5px 8px; border: 1px solid #ccc; vertical-align: top; }
+.highlight { background: #fffde7; }
+.indent { padding-left: 2em; }
+.footer {
+  text-align: center; font-size: 8pt; color: #999;
+  margin-top: 16px; padding-top: 6px; border-top: 1px solid #ddd;
+}
+ul { padding-left: 2em; margin: 4px 0; }
+li { margin: 2px 0; }
+.qr { text-align: center; margin-top: 8px; font-size: 9pt; color: #666; }
+</style>
+</head>
+<body>
+
+<!-- 访问码门禁 -->
+<div id="gateOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;
+  background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;font-family:'PingFang SC','Microsoft YaHei',sans-serif">
+  <div style="font-size:24px;font-weight:800;color:#1a1a1a">🧠 IGNITE</div>
+  <p style="color:#888;font-size:13px">内部文档 · 请输入访问码</p>
+  <input type="password" id="gateInput" placeholder="访问码" autofocus
+    style="width:240px;padding:12px 18px;border-radius:8px;border:1px solid #ddd;
+    font-size:15px;text-align:center;outline:none;letter-spacing:3px"
+    onkeydown="if(event.key==='Enter')checkGate()">
+  <button onclick="checkGate()" style="padding:8px 28px;border-radius:8px;border:none;
+    background:#333;color:#fff;font-size:13px;cursor:pointer">进入</button>
+  <p id="gateError" style="color:#c00;font-size:12px;display:none">访问码错误</p>
+</div>
+<script>
+(function(){
+  const KEY='ignite_gate_v1';
+  if(localStorage.getItem(KEY)==='ok'){
+    document.getElementById('gateOverlay').style.display='none';
+  }
+  window.checkGate=function(){
+    if(document.getElementById('gateInput').value==='ignite2026'){
+      localStorage.setItem(KEY,'ok');
+      document.getElementById('gateOverlay').style.display='none';
+    } else {
+      document.getElementById('gateError').style.display='block';
+    }
+  }
+})();
+</script>
+
+<h1>研究方向说明与学术指导请求</h1>
+<p class="subtitle">龚坤 | 华东师范大学教育学原理研修班 | 学号 26100012008</p>
+
+<h2>一、个人背景</h2>
+<p>东南大学建筑学学士，原象设计创始人，十余年校园空间设计从业经验。在服务全国中小学校的过程中，我持续观察到一个问题：<b>学校图书馆投入大量资金采购图书，但缺乏系统化的教学应用指导，图书馆在课程层面的价值远未被开发。</b></p>
+<p>2022版新课标要求学校安排不少于10%的课时用于跨学科主题学习（教育部, 2022），这使得上述问题变得更加迫切——教研组需要从藏书中找到可用于跨学科教学的素材，但目前没有工具能系统化地支持这一工作。</p>
+
+<h2>二、研究问题</h2>
+<p>本研究分两个阶段推进：</p>
+<p class="indent"><b>阶段一（标注可行性）：基于Bloom修订版认知目标分类（Anderson & Krathwohl, 2001）和SOLO分类法（Biggs & Collis, 1982），利用AI对课外阅读书目进行场景级认知标注，其标注结果与教育学专家之间的一致性如何？</b></p>
+<p class="indent"><b>阶段二（教学效果·后续）：基于上述标注生成的跨学科课程方案，对学生高阶思维能力发展的影响如何？</b></p>
+
+<h2>三、前期工作</h2>
+<p>我借鉴锚定学习理论（Anchored Instruction, Bransford et al., 1990）的思路，提出<b>「认知锚点」</b>的操作性定义：<b>一本书中能够引发特定认知操作的具体场景，标注其认知操作类型（参考Facione批判性思维技能分类, 1990）、强度等级（1-5级），并与Bloom层级、SOLO层级建立初步映射假设（有待学术验证）。</b></p>
+<table>
+<tr><th>工作内容</th><th>进展</th></tr>
+<tr><td>认知锚点标注规范（v1.1）</td><td>已完成，含Bloom-intensity映射假设，AI标注内部一致性通过</td></tr>
+<tr><td>初中经典书目标注</td><td>180本教育部推荐+部编版涉及书目已完成AI标注（共540个锚点）</td></tr>
+<tr><td>可交互Demo</td><td>已开发，支持按书浏览、按认知操作检索、跨书思维桥接三种模式</td></tr>
+</table>
+
+<h2>四、示例</h2>
+<p>以下展示系统如何帮助教师设计"视角采择"能力的阶梯式训练：</p>
+<table>
+<tr><th>强度</th><th>书目（年级）</th><th>场景</th><th>引导问题</th></tr>
+<tr><td>3级</td><td>《夏洛的网》(G7)</td><td>坦普尔顿不情愿地帮夏洛找词</td><td>"如果你是自私的坦普尔顿，你会帮吗？"</td></tr>
+<tr><td>4级</td><td>《小王子》(G7-8)</td><td>国王声称统治一切却无法命令日落</td><td>"国王的权力是真实的还是虚幻的？"</td></tr>
+<tr><td>5级</td><td>《骆驼祥子》(G8)</td><td>祥子堕落后的多角色审视</td><td>"从虎妞、小福子、曹先生视角看，悲剧有何不同？"</td></tr>
+</table>
+
+<h2>五、恳请学术指导</h2>
+<ul>
+<li><b>映射假设的合理性</b>：Bloom与SOLO的绑定映射目前为初步假设，是否需要加入Webb DOK等其他分类工具？</li>
+<li><b>信效度验证方案</b>：如何设计AI标注与人工专家标注的一致性研究（Kappa系数）？需要多大样本量？</li>
+<li><b>实证研究设计</b>：如进入学校开展教学实验，前后测建议使用什么量表？</li>
+</ul>
+<p style="margin-top:8px">如您认为本研究方向有学术价值，<b>恳请出具推荐信</b>，帮助我联系1所合作学校开展试点研究。本人可提供系统和数据，不给学校增加任何成本。</p>
+
+<h2>六、主要参考文献</h2>
+<p style="font-size:9pt;color:#444;line-height:1.5">
+[1] Anderson, L.W. & Krathwohl, D.R. (2001). <i>A Taxonomy for Learning, Teaching, and Assessing</i>. Longman.<br>
+[2] Biggs, J.B. & Collis, K.F. (1982). <i>Evaluating the Quality of Learning: The SOLO Taxonomy</i>. Academic Press.<br>
+[3] Bransford, J.D. et al. (1990). Anchored instruction: Why we need it and how technology can help. <i>Cognition, Education, and Multimedia</i>.<br>
+[4] Facione, P.A. (1990). <i>Critical Thinking: A Statement of Expert Consensus</i>. ERIC.<br>
+[5] 教育部 (2022). 义务教育课程方案和课程标准（2022年版）.
+</p>
+
+<p style="margin-top:8px">手机/微信：18221411618 &nbsp;|&nbsp; Demo可现场演示</p>
+
+<div class="footer">
+本文档仅作学术交流用途 | 龚坤 | 2026年3月
+</div>
+
+</body>
+</html>
