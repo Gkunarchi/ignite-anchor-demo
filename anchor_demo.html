@@ -302,7 +302,7 @@ body {
     <span class="tag">🔬 SOLO分类法 5层级</span>
     <span class="tag">🧠 元认知激发检测</span>
     <span class="tag">📊 Webb DOK 4级深度</span>
-    <span class="tag">🎓 崔允漷核心素养</span>
+    <span class="tag">🎓 核心素养框架</span>
     <span class="tag">🔗 向量桥接</span>
   </div>
   <div class="tags" id="statsRow" style="margin-top:8px"></div>
@@ -464,7 +464,7 @@ function renderBookView() {
         <div class="anchor-hook">${isMetacognitive(a) ? '🧠 <strong>元认知支架</strong>：' : '💡 '}${a.hook}</div>
         ${isMetacognitive(a) ? `<div style="padding:8px 12px;margin-top:4px;background:rgba(124,108,240,0.06);border-left:3px solid #7C6CF0;border-radius:0 8px 8px 0;font-size:12px;color:var(--text2);line-height:1.6">
           <strong style="color:#A094F0">为什么这是元认知激发？</strong><br>
-          这个场景迫使读者在形成判断后反思“我为什么这样想”——即吴刚教授定义的“对思考的思考”。<br>
+          这个场景迫使读者在形成判断后反思“我为什么这样想”——即元认知理论中的“对思考的思考”。<br>
           • Bloom层级：${BLOOM_NAMES[a.bloom_level]}（需要价值判断）<br>
           • 认知操作：${OP_NAMES[a.op]}（需要审视自己的思维框架）<br>
           • 强度：${a.intensity}/5（深度认知加工）
@@ -503,7 +503,7 @@ function renderOpView() {
     html += `<div class="op-section" style="border:1px solid rgba(124,108,240,0.3);border-radius:14px;padding:4px;margin-bottom:32px;background:rgba(124,108,240,0.04)">
       <div class="op-header" style="border-bottom-color:rgba(124,108,240,0.2)">
         <span style="font-size:14px;padding:6px 16px;border-radius:20px;background:rgba(124,108,240,0.15);color:#A094F0;font-weight:700">🧠 元认知激发</span>
-        <span class="op-name">迫使读者"对思考的思考"——吴刚教授定义</span>
+        <span class="op-name">迫使读者“对思考的思考”——元认知理论核心</span>
         <span class="op-count">${metaAnchors.length}个锚点</span>
       </div>`;
     metaAnchors.sort((a, b) => b.intensity - a.intensity).slice(0, 30).forEach(a => {
