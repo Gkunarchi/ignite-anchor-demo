@@ -491,6 +491,48 @@ function renderOpView() {
   });
 
   let html = '';
+
+  // 🧠 元认知激发专区（置顶）
+  const metaAnchors = [];
+  DATA.forEach(book => {
+    book.anchors.forEach(a => {
+      if (isMetacognitive(a)) metaAnchors.push({ ...a, bookTitle: book.title, bookGrade: book.grade });
+    });
+  });
+  if (metaAnchors.length > 0) {
+    html += `<div class="op-section" style="border:1px solid rgba(124,108,240,0.3);border-radius:14px;padding:4px;margin-bottom:32px;background:rgba(124,108,240,0.04)">
+      <div class="op-header" style="border-bottom-color:rgba(124,108,240,0.2)">
+        <span style="font-size:14px;padding:6px 16px;border-radius:20px;background:rgba(124,108,240,0.15);color:#A094F0;font-weight:700">🧠 元认知激发</span>
+        <span class="op-name">迫使读者"对思考的思考"——吴刚教授定义</span>
+        <span class="op-count">${metaAnchors.length}个锚点</span>
+      </div>`;
+    metaAnchors.sort((a, b) => b.intensity - a.intensity).slice(0, 30).forEach(a => {
+      const dok = getDOK(a.intensity);
+      html += `<div class="op-anchor">
+        <div class="op-level" style="color:#A094F0">
+          <div class="op-level-num">DOK${dok.level}</div>
+          <div class="op-level-label">${dok.label}</div>
+        </div>
+        <div class="op-content">
+          <div>
+            <span class="op-book-name">《${a.bookTitle}》</span>
+            <span class="op-book-grade">${a.bookGrade}</span>
+            <span class="anchor-op ${a.op}" style="font-size:10px;padding:2px 8px">${OP_NAMES[a.op]||a.op}</span>
+          </div>
+          <div class="op-scene">${a.scene}</div>
+          <div class="op-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
+          <div style="padding:6px 10px;margin-top:4px;background:rgba(124,108,240,0.06);border-left:3px solid #7C6CF0;border-radius:0 8px 8px 0;font-size:11px;color:var(--text2);line-height:1.5">
+            Bloom:${BLOOM_NAMES[a.bloom_level]} + ${OP_NAMES[a.op]} → 触发元认知监控
+          </div>
+        </div>
+      </div>`;
+    });
+    if (metaAnchors.length > 30) {
+      html += `<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">还有 ${metaAnchors.length-30} 个元认知锚点...</div>`;
+    }
+    html += '</div>';
+  }
+
   Object.keys(opMap).sort().forEach(op => {
     const items = opMap[op].sort((a, b) => a.intensity - b.intensity);
     html += `<div class="op-section">
@@ -530,7 +572,7 @@ function renderOpView() {
 
 // 桥接视图
 function renderBridgeView() {
-  const queryConcepts = ['视角采择', '因果推理', '生命价值', '社会批判', '建模', '共情', '比较'];
+  const queryConcepts = ['元认知', '视角采择', '因果推理', '生命价值', '社会批判', '建模', '共情', '比较'];
   let html = `<div class="bridge-section">
     <div class="bridge-title">🔗 思维桥接：输入一个概念，找到跨书的认知进阶路径</div>
     <div class="bridge-query" id="bridgeQuery">
