@@ -461,7 +461,7 @@ function renderBookView() {
         </div>
         <div class="anchor-scene">📌 ${a.scene}</div>
         <div class="anchor-chapter">📍 ${a.chapter_hint || ''}</div>
-        <div class="anchor-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
+        <div class="anchor-hook">${isMetacognitive(a) ? '🧠 <strong>元认知支架</strong>：' : '💡 '}${a.hook}</div>
         ${isMetacognitive(a) ? `<div style="padding:8px 12px;margin-top:4px;background:rgba(124,108,240,0.06);border-left:3px solid #7C6CF0;border-radius:0 8px 8px 0;font-size:12px;color:var(--text2);line-height:1.6">
           <strong style="color:#A094F0">为什么这是元认知激发？</strong><br>
           这个场景迫使读者在形成判断后反思“我为什么这样想”——即吴刚教授定义的“对思考的思考”。<br>
@@ -545,21 +545,19 @@ function renderOpView() {
       const dok = getDOK(a.intensity);
       html += `<div class="op-anchor">
         <div class="op-level">
-          <div class="op-level-num">DOK${dok.level}</div>
-          <div class="op-level-label">${dok.label}</div>
+          <div class="op-level-num">${a.intensity}</div>
+          <div class="op-level-label">级</div>
         </div>
         <div class="op-content">
           <div>
             <span class="op-book-name">《${a.bookTitle}》</span>
             <span class="op-book-grade">${a.bookGrade}</span>
-            ${metacogHTML(a)}
           </div>
           <div class="op-scene">${a.scene}</div>
-          <div class="op-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
+          <div class="op-hook">${isMetacognitive(a) ? '🧠 ' : '💡 '}${a.hook}</div>
           <div class="op-meta">
             <span class="op-meta-tag">Bloom:${BLOOM_NAMES[a.bloom_level]||a.bloom_level}</span>
             <span class="op-meta-tag">SOLO:${SOLO_NAMES[a.solo_level]||a.solo_level}</span>
-            ${dokHTML(a.intensity)}
             <span class="op-meta-tag">${a.core_competency}</span>
           </div>
         </div>
