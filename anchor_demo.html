@@ -500,21 +500,24 @@ function renderOpView() {
         <span class="op-count">${items.length}个锚点</span>
       </div>`;
     items.forEach(a => {
+      const dok = getDOK(a.intensity);
       html += `<div class="op-anchor">
         <div class="op-level">
-          <div class="op-level-num">${a.intensity}</div>
-          <div class="op-level-label">级</div>
+          <div class="op-level-num">DOK${dok.level}</div>
+          <div class="op-level-label">${dok.label}</div>
         </div>
         <div class="op-content">
           <div>
             <span class="op-book-name">《${a.bookTitle}》</span>
             <span class="op-book-grade">${a.bookGrade}</span>
+            ${metacogHTML(a)}
           </div>
           <div class="op-scene">${a.scene}</div>
-          <div class="op-hook">💡 ${a.hook}</div>
+          <div class="op-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
           <div class="op-meta">
             <span class="op-meta-tag">Bloom:${BLOOM_NAMES[a.bloom_level]||a.bloom_level}</span>
             <span class="op-meta-tag">SOLO:${SOLO_NAMES[a.solo_level]||a.solo_level}</span>
+            ${dokHTML(a.intensity)}
             <span class="op-meta-tag">${a.core_competency}</span>
           </div>
         </div>
