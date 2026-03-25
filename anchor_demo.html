@@ -481,92 +481,96 @@ function renderBookView() {
 }
 
 // 按认知操作浏览
+let opFilter = 'all';
 function renderOpView() {
   const opMap = {};
-  DATA.forEach(book => {
-    book.anchors.forEach(a => {
-      if (!opMap[a.op]) opMap[a.op] = [];
-      opMap[a.op].push({ ...a, bookTitle: book.title, bookGrade: book.grade });
-    });
-  });
-
-  let html = '';
-
-  // 🧠 元认知激发专区（置顶）
   const metaAnchors = [];
-  DATA.forEach(book => {
-    book.anchors.forEach(a => {
-      if (isMetacognitive(a)) metaAnchors.push({ ...a, bookTitle: book.title, bookGrade: book.grade });
+  DATA.forEach(function(book) {
+    book.anchors.forEach(function(a) {
+      if (!opMap[a.op]) opMap[a.op] = [];
+      opMap[a.op].push(Object.assign({}, a, { bookTitle: book.title, bookGrade: book.grade }));
+      if (isMetacognitive(a)) metaAnchors.push(Object.assign({}, a, { bookTitle: book.title, bookGrade: book.grade }));
     });
   });
-  if (metaAnchors.length > 0) {
-    html += `<div class="op-section" style="border:1px solid rgba(124,108,240,0.3);border-radius:14px;padding:4px;margin-bottom:32px;background:rgba(124,108,240,0.04)">
-      <div class="op-header" style="border-bottom-color:rgba(124,108,240,0.2)">
-        <span style="font-size:14px;padding:6px 16px;border-radius:20px;background:rgba(124,108,240,0.15);color:#A094F0;font-weight:700">🧠 元认知激发</span>
-        <span class="op-name">迫使读者“对思考的思考”——元认知理论核心</span>
-        <span class="op-count">${metaAnchors.length}个锚点</span>
-      </div>`;
-    metaAnchors.sort((a, b) => b.intensity - a.intensity).slice(0, 30).forEach(a => {
-      const dok = getDOK(a.intensity);
-      html += `<div class="op-anchor">
-        <div class="op-level" style="color:#A094F0">
-          <div class="op-level-num">DOK${dok.level}</div>
-          <div class="op-level-label">${dok.label}</div>
-        </div>
-        <div class="op-content">
-          <div>
-            <span class="op-book-name">《${a.bookTitle}》</span>
-            <span class="op-book-grade">${a.bookGrade}</span>
-            <span class="anchor-op ${a.op}" style="font-size:10px;padding:2px 8px">${OP_NAMES[a.op]||a.op}</span>
-          </div>
-          <div class="op-scene">${a.scene}</div>
-          <div class="op-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
-          <div style="padding:6px 10px;margin-top:4px;background:rgba(124,108,240,0.06);border-left:3px solid #7C6CF0;border-radius:0 8px 8px 0;font-size:11px;color:var(--text2);line-height:1.5">
-            Bloom:${BLOOM_NAMES[a.bloom_level]} + ${OP_NAMES[a.op]} → 触发元认知监控
-          </div>
-        </div>
-      </div>`;
-    });
-    if (metaAnchors.length > 30) {
-      html += `<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">还有 ${metaAnchors.length-30} 个元认知锚点...</div>`;
+
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">';
+  html += '<button class="bridge-q-btn' + (opFilter==='all'?' active':'') + '" onclick="opFilter=\'all\';renderOpView()">全部 ' + DATA.reduce(function(s,b){return s+b.anchors.length},0) + '</button>';
+  html += '<button class="bridge-q-btn' + (opFilter==='meta'?' active':'') + '" onclick="opFilter=\'meta\';renderOpView()" style="' + (opFilter==='meta'?'background:rgba(124,108,240,0.2);color:#A094F0;border-color:rgba(124,108,240,0.4)':'') + '">🧠 元认知 ' + metaAnchors.length + '</button>';
+  var opKeys = Object.keys(opMap).sort();
+  for (var i = 0; i < opKeys.length; i++) {
+    var op = opKeys[i];
+    html += '<button class="bridge-q-btn' + (opFilter===op?' active':'') + '" onclick="opFilter=\'' + op + '\';renderOpView()">' + (OP_NAMES[op]||op) + ' ' + opMap[op].length + '</button>';
+  }
+  html += '</div>';
+
+  function cardHTML(a) {
+    var isMeta = isMetacognitive(a);
+    return '<div class="op-anchor">' +
+      '<div class="op-level"' + (isMeta?' style="color:#A094F0"':'') + '>' +
+        '<div class="op-level-num">' + a.intensity + '</div>' +
+        '<div class="op-level-label">级</div>' +
+      '</div>' +
+      '<div class="op-content">' +
+        '<div>' +
+          '<span class="op-book-name">《' + a.bookTitle + '》</span>' +
+          '<span class="op-book-grade">' + a.bookGrade + '</span>' +
+        '</div>' +
+        '<div class="op-scene">' + a.scene + '</div>' +
+        '<div class="op-hook">' + (isMeta ? '🧠 ' : '💡 ') + a.hook + '</div>' +
+        '<div class="op-meta">' +
+          '<span class="op-meta-tag">Bloom:' + (BLOOM_NAMES[a.bloom_level]||a.bloom_level) + '</span>' +
+          '<span class="op-meta-tag">SOLO:' + (SOLO_NAMES[a.solo_level]||a.solo_level) + '</span>' +
+          '<span class="op-meta-tag">' + a.core_competency + '</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  if (opFilter === 'meta') {
+    html += '<div class="op-section" style="border:1px solid rgba(124,108,240,0.3);border-radius:14px;padding:4px;background:rgba(124,108,240,0.04)">';
+    html += '<div class="op-header" style="border-bottom-color:rgba(124,108,240,0.2)">';
+    html += '<span style="font-size:14px;padding:6px 16px;border-radius:20px;background:rgba(124,108,240,0.15);color:#A094F0;font-weight:700">🧠 元认知激发</span>';
+    html += '<span class="op-name">迫使读者"对思考的思考"——元认知理论核心</span>';
+    html += '<span class="op-count">' + metaAnchors.length + '个锚点</span>';
+    html += '</div>';
+    metaAnchors.sort(function(a, b) { return b.intensity - a.intensity; });
+    for (var j = 0; j < metaAnchors.length; j++) { html += cardHTML(metaAnchors[j]); }
+    html += '</div>';
+  } else if (opFilter === 'all') {
+    for (var k = 0; k < opKeys.length; k++) {
+      var op2 = opKeys[k];
+      var items = opMap[op2].sort(function(a, b) { return b.intensity - a.intensity; });
+      var sid = 'op_sec_' + op2;
+      html += '<div class="op-section">';
+      html += '<div class="op-header" style="cursor:pointer" onclick="var el=document.getElementById(\'' + sid + '\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'.op-toggle\').textContent=el.style.display===\'none\'?\'▶\':\'▼\'">';
+      html += '<span class="anchor-op ' + op2 + '" style="font-size:14px;padding:6px 16px">' + (OP_NAMES[op2] || op2) + '</span>';
+      html += '<span class="op-name">' + (OP_DESC[op2] || '') + '</span>';
+      html += '<span class="op-count">' + items.length + '个锚点</span>';
+      html += '<span class="op-toggle" style="margin-left:auto;font-size:12px;color:var(--text3)">▼</span>';
+      html += '</div>';
+      html += '<div id="' + sid + '">';
+      var showCount = Math.min(5, items.length);
+      for (var m = 0; m < showCount; m++) { html += cardHTML(items[m]); }
+      if (items.length > 5) {
+        html += '<div style="text-align:center;padding:10px"><button class="bridge-q-btn" onclick="opFilter=\'' + op2 + '\';renderOpView()">查看全部 ' + items.length + ' 个 ' + (OP_NAMES[op2]||op2) + ' 锚点 →</button></div>';
+      }
+      html += '</div></div>';
     }
+  } else {
+    var fItems = (opMap[opFilter]||[]).sort(function(a, b) { return b.intensity - a.intensity; });
+    html += '<div class="op-section">';
+    html += '<div class="op-header">';
+    html += '<span class="anchor-op ' + opFilter + '" style="font-size:14px;padding:6px 16px">' + (OP_NAMES[opFilter] || opFilter) + '</span>';
+    html += '<span class="op-name">' + (OP_DESC[opFilter] || '') + '</span>';
+    html += '<span class="op-count">' + fItems.length + '个锚点</span>';
+    html += '</div>';
+    for (var n = 0; n < fItems.length; n++) { html += cardHTML(fItems[n]); }
     html += '</div>';
   }
 
-  Object.keys(opMap).sort().forEach(op => {
-    const items = opMap[op].sort((a, b) => a.intensity - b.intensity);
-    html += `<div class="op-section">
-      <div class="op-header">
-        <span class="anchor-op ${op}" style="font-size:14px;padding:6px 16px">${OP_NAMES[op] || op}</span>
-        <span class="op-name">${OP_DESC[op] || ''}</span>
-        <span class="op-count">${items.length}个锚点</span>
-      </div>`;
-    items.forEach(a => {
-      const dok = getDOK(a.intensity);
-      html += `<div class="op-anchor">
-        <div class="op-level">
-          <div class="op-level-num">${a.intensity}</div>
-          <div class="op-level-label">级</div>
-        </div>
-        <div class="op-content">
-          <div>
-            <span class="op-book-name">《${a.bookTitle}》</span>
-            <span class="op-book-grade">${a.bookGrade}</span>
-          </div>
-          <div class="op-scene">${a.scene}</div>
-          <div class="op-hook">${isMetacognitive(a) ? '🧠 ' : '💡 '}${a.hook}</div>
-          <div class="op-meta">
-            <span class="op-meta-tag">Bloom:${BLOOM_NAMES[a.bloom_level]||a.bloom_level}</span>
-            <span class="op-meta-tag">SOLO:${SOLO_NAMES[a.solo_level]||a.solo_level}</span>
-            <span class="op-meta-tag">${a.core_competency}</span>
-          </div>
-        </div>
-      </div>`;
-    });
-    html += '</div>';
-  });
   document.getElementById('opView').innerHTML = html;
 }
+
 
 // 桥接视图
 function renderBridgeView() {
