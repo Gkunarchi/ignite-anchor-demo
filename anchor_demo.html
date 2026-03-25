@@ -274,12 +274,17 @@ body {
 </div>
 <script>
 (function(){
-  const KEY='ignite_gate_v1';
+  const KEY='ignite_gate_v2';
   if(localStorage.getItem(KEY)==='ok'){
     document.getElementById('gateOverlay').style.display='none';
   }
-  window.checkGate=function(){
-    if(document.getElementById('gateInput').value==='ignite2026'){
+  async function sha256(msg){
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  window.checkGate=async function(){
+    const hash=await sha256(document.getElementById('gateInput').value);
+    if(hash==='7b7ea6f1e4127a49e478375398124adf4c0cab10e21b57b9c38c5b3e0b2f6290'){
       localStorage.setItem(KEY,'ok');
       document.getElementById('gateOverlay').style.display='none';
     } else {
@@ -291,10 +296,12 @@ body {
 
 <div class="hero">
   <h1>🧠 IGNITE · 认知锚点系统</h1>
-  <p>每本书的高阶思维地图 — 崔允漷核心素养 × Bloom认知分类 × SOLO思维深度</p>
+  <p>每本书的高阶思维地图 — Bloom认知分类 × SOLO思维深度 × Webb知识深度 × 元认知激发</p>
   <div class="tags" id="statsTags">
     <span class="tag">📐 Bloom修订版 6层级</span>
     <span class="tag">🔬 SOLO分类法 5层级</span>
+    <span class="tag">🧠 元认知激发检测</span>
+    <span class="tag">📊 Webb DOK 4级深度</span>
     <span class="tag">🎓 崔允漷核心素养</span>
     <span class="tag">🔗 向量桥接</span>
   </div>
@@ -332,11 +339,14 @@ async function loadData() {
     const raw = await res.json();
     DATA = raw.filter(b => b.anchors && b.anchors.length > 0);
     const totalAnchors = DATA.reduce((s, b) => s + b.anchors.length, 0);
+    const metaCount = DATA.reduce((s, b) => s + b.anchors.filter(a => isMetacognitive(a)).length, 0);
     document.getElementById('statsRow').innerHTML =
       `<span class="tag" style="background:rgba(46,213,115,0.1);color:var(--green);border-color:rgba(46,213,115,0.2)">
         📚 ${DATA.length}本书</span>
        <span class="tag" style="background:rgba(255,107,53,0.1);color:var(--fire);border-color:rgba(255,107,53,0.2)">
-        🧠 ${totalAnchors}个认知锚点</span>
+        🧩 ${totalAnchors}个认知锚点</span>
+       <span class="tag" style="background:rgba(124,108,240,0.1);color:#A094F0;border-color:rgba(124,108,240,0.2)">
+        🧠 ${metaCount}个元认知激发点</span>
        <span class="tag" style="background:rgba(0,210,211,0.1);color:var(--cyan);border-color:rgba(0,210,211,0.2)">
         📊 初中G7-G9 教育部推荐书目</span>`;
     renderBookView();
@@ -367,6 +377,32 @@ const SOLO_NAMES = {
   prestructural: '前结构', unistructural: '单点', multistructural: '多点',
   relational: '关联', extended_abstract: '拓展抽象'
 };
+
+// Webb DOK 映射（从 intensity 推导）
+function getDOK(intensity) {
+  if (intensity <= 2) return { level: 1, label: '回忆' };
+  if (intensity <= 3) return { level: 2, label: '技能' };
+  if (intensity <= 4) return { level: 3, label: '战略' };
+  return { level: 4, label: '拓展' };
+}
+
+// 元认知激发检测（从 bloom_level + op 推导）
+function isMetacognitive(anchor) {
+  const highBloom = ['evaluate', 'create'].includes(anchor.bloom_level);
+  const metaOps = ['perspective', 'critical'].includes(anchor.op);
+  const highIntensity = anchor.intensity >= 4;
+  return (highBloom && metaOps) || (highBloom && highIntensity && metaOps);
+}
+
+function metacogHTML(anchor) {
+  if (!isMetacognitive(anchor)) return '';
+  return `<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:rgba(124,108,240,0.15);color:#A094F0;border:1px solid rgba(124,108,240,0.25)">🧠 元认知激发</span>`;
+}
+
+function dokHTML(intensity) {
+  const dok = getDOK(intensity);
+  return `<span style="padding:2px 8px;border-radius:20px;font-size:10px;background:rgba(0,210,211,0.1);color:var(--cyan);border:1px solid rgba(0,210,211,0.15)">DOK${dok.level}:${dok.label}</span>`;
+}
 
 function intensityHTML(n) {
   let dots = '';
@@ -419,11 +455,20 @@ function renderBookView() {
           ${intensityHTML(a.intensity)}
           <span class="anchor-bloom">Bloom:${BLOOM_NAMES[a.bloom_level] || a.bloom_level}</span>
           <span class="anchor-solo">SOLO:${SOLO_NAMES[a.solo_level] || a.solo_level}</span>
+          ${dokHTML(a.intensity)}
+          ${metacogHTML(a)}
           <span class="anchor-comp">${a.core_competency}</span>
         </div>
         <div class="anchor-scene">📌 ${a.scene}</div>
         <div class="anchor-chapter">📍 ${a.chapter_hint || ''}</div>
-        <div class="anchor-hook">💡 ${a.hook}</div>
+        <div class="anchor-hook">🧠 <strong>元认知支架</strong>：${a.hook}</div>
+        ${isMetacognitive(a) ? `<div style="padding:8px 12px;margin-top:4px;background:rgba(124,108,240,0.06);border-left:3px solid #7C6CF0;border-radius:0 8px 8px 0;font-size:12px;color:var(--text2);line-height:1.6">
+          <strong style="color:#A094F0">为什么这是元认知激发？</strong><br>
+          这个场景迫使读者在形成判断后反思“我为什么这样想”——即吴刚教授定义的“对思考的思考”。<br>
+          • Bloom层级：${BLOOM_NAMES[a.bloom_level]}（需要价值判断）<br>
+          • 认知操作：${OP_NAMES[a.op]}（需要审视自己的思维框架）<br>
+          • 强度：${a.intensity}/5（深度认知加工）
+        </div>` : ''}
         <div class="anchor-why">📝 ${a.why}</div>
         <div class="anchor-tags">
           ${(a.bridge_vector_tags||[]).map(t => `<span class="anchor-tag">${t}</span>`).join('')}
