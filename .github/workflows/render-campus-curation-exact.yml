@@ -1,0 +1,72 @@
+name: Render Exact Campus Curation Frame
+
+on:
+  push:
+    branches:
+      - campus-display-curation-exact
+    paths:
+      - 'campus_display_exact/approved_base_scene.py'
+      - 'campus_display_exact/render_third_bootstrap.py'
+      - '.github/workflows/render-campus-curation-exact.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: campus-display-curation-exact
+
+      - name: Install Blender, Chinese fonts and headless graphics
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            blender \
+            fonts-noto-cjk \
+            libegl1 \
+            libgl1 \
+            libglx-mesa0 \
+            libglu1-mesa \
+            xvfb \
+            python3-pil
+          test -f /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
+          blender --version
+
+      - name: Render third frame from approved master
+        run: |
+          rm -rf campus_display_exact/output_exact
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            blender --background --factory-startup \
+            --python campus_display_exact/render_third_bootstrap.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          out = Path('campus_display_exact/output_exact')
+          image = Image.open(out / '03_reading_curation_exact.png').convert('RGB')
+          assert image.size == (1086, 1448), image.size
+          preview = image.copy()
+          preview.thumbnail((600, 800), Image.Resampling.LANCZOS)
+          preview.save(out / '03_reading_curation_exact_preview.jpg', quality=90, optimize=True)
+          print('render-size', image.size)
+          PY
+
+          test -s campus_display_exact/output_exact/03_reading_curation_exact.png
+          test -s campus_display_exact/output_exact/03_reading_curation_exact_preview.jpg
+          test -s campus_display_exact/output_exact/campus_display_reading_exact.blend
+          ls -lah campus_display_exact/output_exact
+
+      - name: Commit the render and editable Blender file
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f campus_display_exact/output_exact
+          git commit -m 'chore: add exact third curation frame [skip ci]' || exit 0
+          git push origin HEAD:campus-display-curation-exact
