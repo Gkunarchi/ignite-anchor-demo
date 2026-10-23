@@ -1,0 +1,36 @@
+name: Upload Exact Curation Artifact
+
+on:
+  push:
+    branches:
+      - campus-display-curation-exact
+    paths:
+      - '.github/workflows/upload-exact-curation-artifact.yml'
+
+jobs:
+  upload:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout rendered branch
+        uses: actions/checkout@v4
+        with:
+          ref: campus-display-curation-exact
+
+      - name: Verify outputs
+        run: |
+          test -s campus_display_exact/output_exact/03_reading_curation_exact.png
+          test -s campus_display_exact/output_exact/03_reading_curation_exact_preview.jpg
+          test -s campus_display_exact/output_exact/campus_display_reading_exact.blend
+          ls -lah campus_display_exact/output_exact
+
+      - name: Upload exact third frame and editable model
+        uses: actions/upload-artifact@v4
+        with:
+          name: campus-display-reading-exact
+          path: |
+            campus_display_exact/output_exact/03_reading_curation_exact.png
+            campus_display_exact/output_exact/03_reading_curation_exact_preview.jpg
+            campus_display_exact/output_exact/campus_display_reading_exact.blend
+          compression-level: 4
+          retention-days: 1
+          if-no-files-found: error
