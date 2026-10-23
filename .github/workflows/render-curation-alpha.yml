@@ -1,0 +1,44 @@
+name: Render Curation Alpha Layer
+
+on:
+  push:
+    branches:
+      - campus-display-curation-exact
+    paths:
+      - 'campus_display_exact/render_curation_alpha.py'
+      - '.github/workflows/render-curation-alpha.yml'
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: campus-display-curation-exact
+
+      - name: Install Blender and headless graphics
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            blender fonts-noto-cjk libegl1 libgl1 libglx-mesa0 libglu1-mesa xvfb
+
+      - name: Render transparent curation layer
+        run: |
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            blender --background --factory-startup \
+            --python campus_display_exact/render_curation_alpha.py
+          test -s campus_display_exact/output_exact/03_reading_curation_alpha.png
+          file campus_display_exact/output_exact/03_reading_curation_alpha.png
+
+      - name: Upload alpha layer
+        uses: actions/upload-artifact@v4
+        with:
+          name: campus-display-reading-alpha
+          path: campus_display_exact/output_exact/03_reading_curation_alpha.png
+          compression-level: 2
+          retention-days: 1
+          if-no-files-found: error
