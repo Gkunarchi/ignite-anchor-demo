@@ -1,0 +1,44 @@
+name: Debug Exact Campus Curation Render
+
+on:
+  push:
+    branches:
+      - campus-display-curation-exact
+    paths:
+      - '.github/workflows/debug-campus-curation-exact.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  debug:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: campus-display-curation-exact
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            blender fonts-noto-cjk libegl1 libgl1 libglx-mesa0 libglu1-mesa xvfb
+      - name: Run and capture Blender log
+        shell: bash
+        run: |
+          set +e
+          rm -rf campus_display_exact/output_exact
+          xvfb-run -a -s '-screen 0 1920x1080x24' \
+            blender --background --factory-startup \
+            --python campus_display_exact/render_third_bootstrap_fixed.py \
+            > campus_display_exact/render_debug.log 2>&1
+          status=$?
+          echo "EXIT_STATUS=$status" >> campus_display_exact/render_debug.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f campus_display_exact/render_debug.log
+          git commit -m 'chore: capture exact render debug log [skip ci]' || true
+          git push origin HEAD:campus-display-curation-exact || true
+          exit 0
