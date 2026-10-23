@@ -26,6 +26,15 @@ runtime_source = runtime_source.replace(
 if 'approved_base_scene.py' not in runtime_source:
     raise RuntimeError("Base-script path substitution failed")
 
+# Ubuntu's packaged Blender 4.0 is built without OpenImageDenoiser.
+# Disable only the unavailable post-render denoiser; geometry, materials,
+# camera, lights and sampling remain exactly the approved master values.
+needle = "scene = bpy.context.scene\nlink_only = ns[\"link_only\"]"
+replacement = "scene = bpy.context.scene\nscene.cycles.use_denoising = False\nlink_only = ns[\"link_only\"]"
+if needle not in runtime_source:
+    raise RuntimeError("Denoising patch insertion point not found")
+runtime_source = runtime_source.replace(needle, replacement, 1)
+
 runtime = ROOT / "_render_third_exact_runtime_fixed.py"
 runtime.write_text(runtime_source, encoding="utf-8")
 namespace = {"__name__": "__main__", "__file__": str(runtime)}
