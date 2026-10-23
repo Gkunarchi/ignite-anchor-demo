@@ -7,6 +7,7 @@ on:
     paths:
       - 'campus_display_exact/approved_base_scene.py'
       - 'campus_display_exact/render_third_bootstrap.py'
+      - 'campus_display_exact/render_third_bootstrap_fixed.py'
       - '.github/workflows/render-campus-curation-exact.yml'
 
 permissions:
@@ -41,10 +42,11 @@ jobs:
 
       - name: Render third frame from approved master
         run: |
+          set -euo pipefail
           rm -rf campus_display_exact/output_exact
           xvfb-run -a -s '-screen 0 1920x1080x24' \
             blender --background --factory-startup \
-            --python campus_display_exact/render_third_bootstrap.py
+            --python campus_display_exact/render_third_bootstrap_fixed.py
 
           python3 - <<'PY'
           from pathlib import Path
@@ -67,6 +69,7 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin campus-display-curation-exact
           git add -f campus_display_exact/output_exact
           git commit -m 'chore: add exact third curation frame [skip ci]' || exit 0
           git push origin HEAD:campus-display-curation-exact
