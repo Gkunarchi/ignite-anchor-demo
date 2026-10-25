@@ -1,1 +1,72 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B02 电视功能锚点实验 v0.3</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">FORMNI / B02</div>
+    <div class="title">墙面生成第一稿 · 点击电视成为功能锚点 · 后续推拉持续保护</div>
+    <div class="spacer"></div>
+    <div class="actions">
+      <button id="undoBtn" title="撤销">↶</button>
+      <button id="redoBtn" title="重做">↷</button>
+      <button id="viewBtn">重置视角</button>
+      <button id="resetBtn">重新开始</button>
+    </div>
+  </header>
+  <main>
+    <section class="viewport" id="viewport">
+      <canvas id="canvas" aria-label="Formni 三维墙面行为实验"></canvas>
+      <div class="top-note"><b>B02 · 功能锚点实验</b><span>先点击墙面，再点击电视；整组围绕锚点实时重组</span></div>
+      <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+      <div class="axis-legend">
+        <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>左右</div>
+        <div class="axis-chip"><i class="dot" style="background:var(--blue)"></i>上下</div>
+        <div class="axis-chip"><i class="dot" style="background:var(--green)"></i>前后</div>
+      </div>
+      <div class="toast" id="toast"></div>
+    </section>
+    <aside class="side">
+      <div class="card">
+        <h3>行为链</h3>
+        <div class="steps">
+          <div class="step" id="stepWall"><div class="n">1</div><div><b>选择墙面</b><span>系统读取墙宽、高度和朝向</span></div></div>
+          <div class="step" id="stepSeed"><div class="n">2</div><div><b>生成设计种子</b><span>出现一个完整但仍容易变化的第一稿</span></div></div>
+          <div class="step" id="stepAnchor"><div class="n">3</div><div><b>电视成为锚点</b><span>点击电视，整组围绕它重新组织</span></div></div>
+          <div class="step" id="stepShape"><div class="n">4</div><div><b>继续推拉</b><span>移动电视或外框，锚点持续保留</span></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>当前状态</h3>
+        <div class="state">
+          <div class="row"><span>墙面</span><strong id="wallState">等待选择</strong></div>
+          <div class="row"><span>柜体宽度</span><strong id="widthState">—</strong></div>
+          <div class="row"><span>柜体高度</span><strong id="heightState">—</strong></div>
+          <div class="row"><span>柜体深度</span><strong id="depthState">—</strong></div>
+          <div class="row"><span>离地高度</span><strong id="bottomState">—</strong></div>
+          <div class="row"><span>背面关系</span><strong id="backState">—</strong></div>
+          <div class="row"><span>电视锚点</span><strong id="tvState">未确认</strong></div>
+          <div class="row"><span>电视位置</span><strong id="tvPositionState">—</strong></div>
+          <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>本轮规则</h3>
+        <div class="rule"><b>先生成：</b>点击墙面得到中性第一稿。<br><b>再确认功能：</b>点击电视，它立即成为高优先级锚点，柜体围绕它重新组织。<br><b>持续保留：</b>拖动电视或六向推拉外框时，电视尺寸、位置关系和净空不会被系统遗忘。<br><b>实时变化：</b>所有重组都发生在拖动过程中，松手只提交当前结果。</div>
+      </div>
+      <div class="footer">本轮只验证第二组行为：场景对象成为功能锚点。电视一旦被明确，后续生成、推拉和重组都必须持续尊重它。</div>
+    </aside>
+  </main>
+</div>
+
+  <script src="app-1.js"></script>
+  <script src="app-2.js"></script>
+  <script src="app-3.js"></script>
+  <script src="app-4.js"></script>
+</body>
+</html>
