@@ -32,8 +32,6 @@ function b06Ensure(){
 function b06Selected(){const x=b05Selected();if(!x)return null;b06Ensure();b06Region(x.reg);return x;}
 function b06AllRegions(){b06Ensure();if(!state.layout)return[];return['left','right'].flatMap(side=>state.layout[side].regions.map((reg,index)=>({side,index,reg})));}
 function b06Counts(){const all=b06AllRegions(),confirmed=all.filter(x=>x.reg.confirmed).length;return{total:all.length,confirmed,exploring:all.length-confirmed};}
-
-const b06BaseResolve=b04Resolve;
 function b06CandidateList(reg,rect){
   const base=b06BaseResolve(reg,rect);
   const pool=rect.w<420?['open','closed']:
@@ -42,6 +40,8 @@ function b06CandidateList(reg,rect){
     ['closed','mixed','drawers','open'];
   return[base,...pool.filter(x=>x!==base)];
 }
+
+const b06BaseResolve=b04Resolve;
 b04Resolve=function(reg,rect){
   b06Region(reg);
   if(reg.confirmed&&reg.confirmedStructure)return reg.confirmedStructure;
@@ -66,8 +66,11 @@ function b06Capture(reg,rect){
 }
 function b06Release(reg){b06Region(reg);reg.confirmed=false;reg.confirmedStructure=null;reg.confirmedRole=null;reg.confirmedOpenShare=null;}
 function b06CurrentLabel(reg,rect){
-  b06Region(reg);const list=b06CandidateList(reg,rect),i=Math.abs(reg.variant||0)%list.length;
-  return reg.confirmed?'已确认':`探索 ${i+1}/${list.length}`;
+  b06Region(reg);
+  if(reg.confirmed)return'已确认';
+  if((reg.structure||'auto')!=='auto')return'明确结构';
+  const list=b06CandidateList(reg,rect),i=Math.abs(reg.variant||0)%list.length;
+  return `探索 ${i+1}/${list.length}`;
 }
 function b06Action(message,fn){
   const x=b06Selected();if(!x)return;pushHistory(snapshot());fn(x);state.hasConvergenceAction=true;state.convergenceRetested=false;draw();toast(message);
@@ -80,15 +83,13 @@ b06NextLocal.onclick=()=>b06Action('只为这一格换了一个仍然成立的�
 
 function b06NextUnconfirmed(){
   if(!state.tv.anchor||!state.layout)return;
-  const alloc=b03Alloc(),candidates=[];
-  ['left','right'].forEach(side=>state.layout[side].regions.forEach((reg,index)=>{
+  pushHistory(snapshot());let changed=0;
+  const alloc=b03Alloc();['left','right'].forEach(side=>state.layout[side].regions.forEach((reg,index)=>{
     b06Region(reg);if(reg.confirmed||(reg.structure||'auto')!=='auto')return;
-    const rect=alloc[side][index];if(rect)candidates.push({reg,rect});
+    const rect=alloc[side][index];if(!rect)return;const list=b06CandidateList(reg,rect);reg.variant=(Math.abs(reg.variant||0)+1)%list.length;changed++;
   }));
-  if(!candidates.length){toast('没有可重新探索的区域；先放开一个已确认区域');return;}
-  pushHistory(snapshot());
-  candidates.forEach(({reg,rect})=>{const list=b06CandidateList(reg,rect);reg.variant=(Math.abs(reg.variant||0)+1)%list.length;});
-  state.solutionGeneration++;state.hasAlternativeAction=true;state.hasConvergenceAction=true;state.convergenceRetested=false;draw();toast(`已重算 ${candidates.length} 个未确认区域；确认部分保持不变`);
+  if(!changed){future=[];toast('没有可重新探索的区域；先放开一个已确认区域');return;}
+  state.solutionGeneration++;state.hasAlternativeAction=true;state.hasConvergenceAction=true;state.convergenceRetested=false;draw();toast(`已重算 ${changed} 个未确认区域；确认部分保持不变`);
 }
 b06NextScheme.onclick=b06NextUnconfirmed;
 
@@ -104,12 +105,18 @@ b06ConfirmAll.onclick=()=>{
 };
 
 // 新的明确结构或立面动作，高于旧的确认：先重新打开当前区域。
-function b06ReleaseSelectedForNewIntent(){const x=b06Selected();if(x&&x.reg.confirmed)b06Release(x.reg);}
 [
   b04Auto,b04Closed,b04Open,b04Drawers,b04Mixed,
   b05Focus,b05Background,b05Auto,b05Less,b05More
 ].forEach(button=>{
-  const base=button.onclick;button.onclick=()=>{b06ReleaseSelectedForNewIntent();base();state.hasConvergenceAction=true;state.convergenceRetested=false;draw();};
+  const base=button.onclick;
+  button.onclick=()=>{
+    const x=b06Selected(),pre=x&&x.reg.confirmed?snapshot():null,before=history.length;
+    if(x&&x.reg.confirmed)b06Release(x.reg);
+    base();
+    if(pre&&history.length>before)history[history.length-1]=pre;
+    state.hasConvergenceAction=true;state.convergenceRetested=false;draw();
+  };
 });
 
 // 分割表示新的拓扑意图：继承结构与立面，但新区域重新进入探索。
@@ -137,8 +144,9 @@ b03MenuPosition=function(){
   b06Ensure();b06BaseMenu();const x=b06Selected();
   [b06Confirm,b06Explore,b06NextLocal].forEach(b=>b.classList.remove('active','confirmed','explore'));
   if(x){
-    b06Confirm.disabled=x.reg.confirmed;b06Explore.disabled=!x.reg.confirmed;b06NextLocal.disabled=x.reg.confirmed;
-    if(x.reg.confirmed){b06Confirm.classList.add('confirmed');b06Explore.classList.add('explore');}else b06Confirm.classList.add('active');
+    b06Confirm.disabled=x.reg.confirmed;b06Explore.disabled=!x.reg.confirmed;b06NextLocal.disabled=x.reg.confirmed||(x.reg.structure||'auto')!=='auto';
+    (x.reg.confirmed?b06Explore:b06Confirm).classList.add(x.reg.confirmed?'explore':'active');
+    if(x.reg.confirmed)b06Confirm.classList.add('confirmed');
     const status=b06CurrentLabel(x.reg,x.rect);b03MenuTitle.textContent+=` · ${status}`;
     const top=parseFloat(b03Menu.style.top)||60;b03Menu.style.top=clamp(top,12,Math.max(12,H-b03Menu.offsetHeight-12))+'px';
   }
