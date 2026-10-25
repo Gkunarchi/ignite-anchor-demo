@@ -71,10 +71,12 @@ function b07Requirements(handle=null,fixed=null){
   let softWidth=softRight-softLeft,hardWidth=hardRight-hardLeft;
   if(handle==='right'&&Number.isFinite(fixed)){softWidth=softRight-fixed;hardWidth=hardRight-fixed;}
   if(handle==='left'&&Number.isFinite(fixed)){softWidth=fixed-softLeft;hardWidth=fixed-hardLeft;}
+  const moving=handle==='right'?right:handle==='left'?left:null;
   return{
     left,right,softLeft,softRight,hardLeft,hardRight,
     softWidth:Math.max(800,softWidth),hardWidth:Math.max(800,hardWidth),
-    mergeable:left.mergeable+right.mergeable
+    mergeable:moving?moving.mergeable:left.mergeable+right.mergeable,
+    movingProtected:moving?moving.protected:left.protected+right.protected
   };
 }
 function b07FixedEdge(handle,start){
@@ -88,7 +90,7 @@ function b07ApplyWidth(width,handle,fixed){
   c.x=handle==='left'?fixed-width/2:fixed+width/2;
 }
 function b07Reason(conflict,req){
-  const protectedCount=req.left.protected+req.right.protected;
+  const protectedCount=req.movingProtected;
   if(conflict.requestedW<req.hardWidth-1){
     if(protectedCount)return`电视净空与 ${protectedCount} 个明确／锁定区域共同需要至少 ${mm(req.hardWidth)}`;
     return`电视锚点及必要净空至少需要 ${mm(req.hardWidth)}`;
@@ -109,16 +111,18 @@ function b07ClearConflict(){
   state.conflict=null;
   b07Panel.classList.remove('show');
 }
-function b07Releasable(){
+function b07Releasable(handle=null){
+  const movingSide=handle==='right'?'right':handle==='left'?'left':null;
   return b06AllRegions().filter(x=>{
     b07Region(x.reg);
-    return x.reg.confirmed&&x.reg.lockedWidth==null&&(x.reg.structure||'auto')==='auto'&&x.reg.origin!=='user';
+    return (!movingSide||x.side===movingSide)&&x.reg.confirmed&&x.reg.lockedWidth==null&&(x.reg.structure||'auto')==='auto'&&x.reg.origin!=='user';
   });
 }
-function b07MergeAutoPair(){
+function b07MergeAutoPair(handle=null){
   b07Ensure();
   const candidates=[];
-  ['left','right'].forEach(sideName=>{
+  const sides=handle==='right'?['right']:handle==='left'?['left']:['left','right'];
+  sides.forEach(sideName=>{
     const side=state.layout[sideName];
     for(let i=0;i<side.regions.length-1;i++){
       const a=b07Region(side.regions[i]),b=b07Region(side.regions[i+1]);
@@ -144,23 +148,23 @@ function b07TryResolve(releaseOne=false){
   if(!conflict)return;
   const before=snapshot();
   if(releaseOne){
-    const list=b07Releasable();
+    const list=b07Releasable(conflict.handle);
     if(!list.length){toast('没有可以自动放开的确认；锁定或明确结构必须由你亲自修改');return;}
     b06Release(list[list.length-1].reg);
   }
   let req=b07Requirements(conflict.handle,conflict.fixed);
   if(conflict.requestedW<req.hardWidth-1){
-    if(releaseOne){restore(before);toast('放开一个确认后仍不足；还存在更高优先级约束');}
+    if(releaseOne){const keep=clone(conflict);restore(before);state.conflict=keep;draw();toast('放开一个确认后仍不足；还存在更高优先级约束');}
     else toast('目标小于明确条件的硬下限；不能只靠未确认区域解决');
     return;
   }
   let guard=20;
   while(req.softWidth>conflict.requestedW+1&&guard--){
-    if(!b07MergeAutoPair())break;
+    if(!b07MergeAutoPair(conflict.handle))break;
     req=b07Requirements(conflict.handle,conflict.fixed);
   }
   if(req.softWidth>conflict.requestedW+1){
-    restore(before);
+    const keep=clone(conflict);restore(before);state.conflict=keep;draw();
     toast('未确认区域已经无法再合并；需要你明确解除一条关系');
     return;
   }
@@ -251,7 +255,7 @@ updateUI=function(){
     b07Text.textContent=`你要 ${mm(c.requestedW)}，当前决定至少需要 ${mm(c.legalW)}。${c.reason}。`;
     const live=b07Requirements(c.handle,c.fixed);
     b07Adapt.disabled=!(c.requestedW>=live.hardWidth-1&&live.mergeable>0);
-    b07Release.disabled=!b07Releasable().length;
+    b07Release.disabled=!b07Releasable(c.handle).length;
   }
   b07StepConflict.classList.toggle('on',!!state.hasConflictAction);
   b07StepResolve.classList.toggle('on',!!c||!!state.hasConflictResolution);
@@ -295,13 +299,13 @@ if(b07Qs.get('conflict')==='1'){
   state.cabinet={x:0,y:0,z:0,w:5200,h:2750,d:520};
   state.tv={...DEFAULT_TV,anchor:true};
   state.layout=b03Default();
-  state.layout.left.regions=[b03New(),b03New(),b03New()];
-  state.layout.right.regions=[b03New(),b03New()];
+  state.layout.left.regions=[b03New(),b03New()];
+  state.layout.right.regions=[b03New(),b03New(),b03New()];
   state.layout.left.regions.forEach(r=>{r.origin='auto';r.structure='auto';});
   state.layout.right.regions.forEach(r=>{r.origin='auto';r.structure='auto';});
+  state.layout.left.regions[1].lockedWidth=620;
   state.layout.right.regions[0].structure='closed';
   state.layout.right.regions[0].facadeRole='background';
-  state.layout.right.regions[1].lockedWidth=620;
   state.facade={aligned:true,openShare:.43};
   b07Ensure();
   const alloc=b03Alloc();
