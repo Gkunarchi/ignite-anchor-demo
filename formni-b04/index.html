@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B04 功能区到柜体结构</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:238px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-label{padding:8px 4px 6px;font-size:10px;color:#74807d;border-top:1px solid rgba(30,41,40,.08);margin-top:8px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.structure-actions{grid-template-columns:1fr 1fr}.structure-actions button.active{background:#32777c;color:#fff;border-color:#32777c}.structure-actions button.auto-active{background:#dcebea;color:#245c60;border-color:rgba(50,119,124,.35)}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B04</div>
+  <div class="title">功能区域 → 柜体结构 · 自动判断在后台运行 · 明确选择优先并持续保留</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维柜体结构实验"></canvas>
+  <div class="top-note"><b>B04 · 功能区到柜体结构</b><span>先建立锚点与区域，再让每个区域原位变成门柜、开放架、抽屉或混合结构</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>外框</div>
+    <div class="axis-chip"><i class="line"></i>区域关系</div>
+    <div class="axis-chip"><i class="structure-dot"></i>结构身份</div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions">
+      <button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button>
+      <button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button>
+      <button id="lockBtn">锁定宽度</button>
+    </div>
+    <div class="menu-label">这一格怎样实现</div>
+    <div class="menu-actions structure-actions">
+      <button id="autoStructureBtn">系统判断</button><button id="closedStructureBtn">门柜</button>
+      <button id="openStructureBtn">开放架</button><button id="drawerStructureBtn">抽屉组</button>
+      <button id="mixedStructureBtn">门＋开放</button>
+    </div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card"><h3>行为链</h3><div class="steps">
+    <div class="step" id="stepWall"><div class="n">1</div><div><b>选择墙面</b><span>生成中性第一稿</span></div></div>
+    <div class="step" id="stepSeed"><div class="n">2</div><div><b>生成设计种子</b><span>获得可继续变化的整体</span></div></div>
+    <div class="step" id="stepAnchor"><div class="n">3</div><div><b>确认电视锚点</b><span>整组围绕电视重新组织</span></div></div>
+    <div class="step" id="stepRegion"><div class="n">4</div><div><b>建立功能区域</b><span>分割、合并、均分和锁定</span></div></div>
+    <div class="step" id="stepStructure"><div class="n">5</div><div><b>翻译成柜体结构</b><span>自动判断，或明确指定实现方式</span></div></div>
+    <div class="step" id="stepShape"><div class="n">6</div><div><b>继续推拉</b><span>尺寸变化，结构身份仍然保留</span></div></div>
+    <div class="step" id="stepStructureRetest"><div class="n">7</div><div><b>结构已复验</b><span>外框或区域变化后仍按原意生成</span></div></div>
+    <div class="step" id="stepRelation" style="display:none"></div><div class="step" id="stepRetest" style="display:none"></div>
+  </div></div>
+  <div class="card"><h3>当前状态</h3><div class="state">
+    <div class="row"><span>墙面</span><strong id="wallState">等待选择</strong></div>
+    <div class="row"><span>柜体宽度</span><strong id="widthState">—</strong></div>
+    <div class="row"><span>柜体高度</span><strong id="heightState">—</strong></div>
+    <div class="row"><span>柜体深度</span><strong id="depthState">—</strong></div>
+    <div class="row"><span>离地高度</span><strong id="bottomState">—</strong></div>
+    <div class="row"><span>背面关系</span><strong id="backState">—</strong></div>
+    <div class="row"><span>电视锚点</span><strong id="tvState">未确认</strong></div>
+    <div class="row"><span>电视位置</span><strong id="tvPositionState">—</strong></div>
+    <div class="row"><span>左侧区域</span><strong id="leftState">—</strong></div>
+    <div class="row"><span>右侧区域</span><strong id="rightState">—</strong></div>
+    <div class="row"><span>已建立关系</span><strong id="relationState">—</strong></div>
+    <div class="row"><span>当前选择</span><strong id="selectionState">—</strong></div>
+    <div class="row"><span>区域结构</span><strong id="structureChoiceState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+  </div></div>
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>自动：</b>区域没有明确指令时，系统根据宽度和高度选择当前结构。<br>
+    <b>明确：</b>一旦指定门柜、开放架、抽屉或混合结构，优先级高于自动判断。<br>
+    <b>适配：</b>尺寸变化后，门数、层板数和抽屉数可以变化，但结构身份不变。<br>
+    <b>继承：</b>拆分会继承原结构；合并相同结构继续保留，不同结构交回系统重算。
+  </div></div>
+  <div class="footer">本轮只验证“功能区域怎样翻译成结构”。材质、五金、真实柜型与生产数据继续不进入。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="../formni-b03/b03.js"></script>
+<script src="b04.js"></script>
+</body>
+</html>
