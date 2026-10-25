@@ -14,7 +14,9 @@
 .line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}.decision-dot{width:8px;height:8px;border-radius:50%;background:#52766f}.site-dot{width:8px;height:8px;border-radius:50%;background:#b56c3f}
 .side{overflow:auto;padding-right:2px}.side::-webkit-scrollbar{width:6px}.side::-webkit-scrollbar-thumb{background:rgba(30,41,40,.16);border-radius:6px}
 .site-card{border-color:rgba(181,108,63,.22);background:rgba(255,251,247,.96)}
-.site-state{color:#9a552f}.priority-list{display:grid;gap:6px;font-size:11px;color:#65706d}.priority-list div{display:flex;gap:8px;align-items:center}.priority-list b{width:18px;height:18px;border-radius:6px;background:#edf1ef;display:grid;place-items:center;font-size:10px;color:#3c4946}
+.site-state{color:#9a552f}.constraint-dot{width:8px;height:8px;border-radius:50%;background:#bd5147}.priority-list{display:grid;gap:6px;font-size:11px;color:#65706d}.priority-list div{display:flex;gap:8px;align-items:center}.priority-list b{width:18px;height:18px;border-radius:6px;background:#edf1ef;display:grid;place-items:center;font-size:10px;color:#3c4946}
+.conflict-panel{position:absolute;left:50%;top:72px;transform:translate(-50%,-12px);width:min(520px,calc(100% - 36px));padding:14px 15px;border-radius:15px;background:rgba(255,249,247,.97);border:1px solid rgba(189,81,71,.35);box-shadow:0 18px 50px rgba(95,35,31,.18);z-index:25;opacity:0;pointer-events:none;transition:.18s}
+.conflict-panel.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}.conflict-head{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:780;color:#8d332c}.conflict-text{font-size:11px;line-height:1.55;color:#6f4b47;margin:7px 0 10px}.conflict-actions{display:flex;gap:7px;flex-wrap:wrap}.conflict-actions button{height:31px;font-size:11px}.conflict-actions .danger{background:#bd5147;color:#fff;border-color:#bd5147}.conflict-actions .soft{background:#fff2ef;color:#8d332c;border-color:rgba(189,81,71,.25)}
 </style>
 </head>
 <body>
@@ -66,7 +68,15 @@
       <button id="nextLocalBtn">换一个可能</button>
     </div>
   </div>
-  <div id="conflictPanel" style="display:none"><span id="conflictTitle"></span><span id="conflictText"></span><button id="adaptConflictBtn"></button><button id="releaseConflictBtn"></button><button id="keepConflictBtn"></button></div>
+  <div class="conflict-panel" id="conflictPanel">
+    <div class="conflict-head"><i class="constraint-dot"></i><span id="conflictTitle">目标尺寸与当前决定冲突</span></div>
+    <div class="conflict-text" id="conflictText">系统已停在最后一个合法尺寸。</div>
+    <div class="conflict-actions">
+      <button id="adaptConflictBtn" class="danger">只调整未确认部分</button>
+      <button id="releaseConflictBtn" class="soft">放开一个已确认</button>
+      <button id="keepConflictBtn">保留当前尺寸</button>
+    </div>
+  </div>
 </section>
 <aside class="side">
   <div class="card"><h3>本轮行为链</h3><div class="steps">
