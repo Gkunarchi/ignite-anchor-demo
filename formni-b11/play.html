@@ -1,0 +1,7 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Formni B11</title><style>html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden;background:#e9edeb}</style></head><body><iframe id="app" title="Formni B11 物品需求与容量"></iframe><script>
+const f=document.getElementById('app');
+const p=new URLSearchParams(location.search),q=new URLSearchParams(p);
+if(p.get('storage')==='1'||p.get('storageConflict')==='1')q.set('activity','1');
+f.src='../formni-b09/index.html?'+q.toString();
+f.addEventListener('load',()=>{const d=f.contentDocument;const inject=(src,next)=>{const s=d.createElement('script');s.src=src;s.onload=next;d.body.appendChild(s);};inject('../formni-b09/b09-hit.js',()=>inject('../formni-b10/b10.js',()=>inject('../formni-b11/b11.js')));});
+</script></body></html>
