@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B09 多锚点与功能关系</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:258px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-label{padding:8px 4px 6px;font-size:10px;color:#74807d;border-top:1px solid rgba(30,41,40,.08);margin-top:8px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.structure-actions button.active,.facade-actions button.active,.convergence-actions button.active{background:#32777c;color:#fff;border-color:#32777c}.structure-actions button.auto-active,.facade-actions button.auto-active{background:#dcebea;color:#245c60;border-color:rgba(50,119,124,.35)}
+.convergence-actions button.confirmed{background:#52766f;color:#fff;border-color:#52766f}.convergence-actions button.explore{background:#edf3f1;color:#315c58;border-color:rgba(49,92,88,.25)}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}.facade-line{width:13px;height:3px;border-radius:2px;background:#7c62a8}.decision-dot{width:8px;height:8px;border-radius:50%;background:#52766f}.constraint-dot{width:8px;height:8px;border-radius:50%;background:#bd5147}.anchor-dot{width:8px;height:8px;border-radius:50%;background:#b06a38}
+.side{overflow:auto;padding-right:2px}.side::-webkit-scrollbar{width:6px}.side::-webkit-scrollbar-thumb{background:rgba(30,41,40,.16);border-radius:6px}
+.conflict-panel{position:absolute;left:50%;top:72px;transform:translate(-50%,-12px);width:min(520px,calc(100% - 36px));padding:14px 15px;border-radius:15px;background:rgba(255,249,247,.97);border:1px solid rgba(189,81,71,.35);box-shadow:0 18px 50px rgba(95,35,31,.18);z-index:25;opacity:0;pointer-events:none;transition:.18s}.conflict-panel.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}.conflict-head{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:780;color:#8d332c}.conflict-text{font-size:11px;line-height:1.55;color:#6f4b47;margin:7px 0 10px}.conflict-actions{display:flex;gap:7px;flex-wrap:wrap}.conflict-actions button{height:31px;font-size:11px}.conflict-actions .danger{background:#bd5147;color:#fff;border-color:#bd5147}.conflict-actions .soft{background:#fff2ef;color:#8d332c;border-color:rgba(189,81,71,.25)}
+.desk-menu{position:absolute;display:none;width:198px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:28}.desk-menu.show{display:block}.desk-menu .menu-actions{grid-template-columns:1fr 1fr}.desk-menu button.active{background:#b06a38;color:#fff;border-color:#b06a38}.desk-menu button.danger{color:#9a443d}
+.anchor-card{border-color:rgba(176,106,56,.24);background:rgba(255,251,247,.96)}.relation-meter{height:7px;background:#ece8e3;border-radius:999px;overflow:hidden;margin-top:8px}.relation-meter span{display:block;height:100%;width:0;background:#b06a38;transition:.18s}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B09</div>
+  <div class="title">多锚点与功能关系 · 电视和书桌同时成立 · 剩余空间持续重组</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="nextSchemeBtn">换一版未确认</button><button id="confirmAllBtn">确认当前方案</button>
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维多锚点实验"></canvas>
+  <div class="top-note"><b>B09 · 多锚点与功能关系</b><span>点墙 → 点电视 → 点书桌；移动任一锚点，剩余空间实时重新组织</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>外框</div>
+    <div class="axis-chip"><i class="decision-dot"></i>电视锚点</div>
+    <div class="axis-chip"><i class="anchor-dot"></i>书桌锚点</div>
+    <div class="axis-chip"><i class="constraint-dot"></i>安全边界</div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <div class="conflict-panel" id="conflictPanel">
+    <div class="conflict-head"><i class="constraint-dot"></i><span id="conflictTitle">目标尺寸与当前决定冲突</span></div>
+    <div class="conflict-text" id="conflictText">系统已停在最后一个合法尺寸。</div>
+    <div class="conflict-actions"><button id="adaptConflictBtn" class="danger">只调整未确认部分</button><button id="releaseConflictBtn" class="soft">放开一个已确认</button><button id="keepConflictBtn">保留当前尺寸</button></div>
+  </div>
+
+  <div class="desk-menu" id="deskMenu">
+    <div class="menu-title">书桌与电视的关系</div>
+    <div class="menu-actions">
+      <button id="deskAutoBtn">自动判断</button><button id="deskLeftBtn">固定在左侧</button>
+      <button id="deskRightBtn">固定在右侧</button><button id="deskLockBtn">锁定位置</button>
+      <button id="deskReleaseBtn" class="danger">取消锚点</button>
+    </div>
+  </div>
+
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions"><button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button><button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button><button id="lockBtn">锁定宽度</button></div>
+    <div class="menu-label">这一格怎样实现</div>
+    <div class="menu-actions structure-actions"><button id="autoStructureBtn">系统判断</button><button id="closedStructureBtn">门柜</button><button id="openStructureBtn">开放架</button><button id="drawerStructureBtn">抽屉组</button><button id="mixedStructureBtn">门＋开放</button></div>
+    <div class="menu-label">整个立面怎样组织</div>
+    <div class="menu-actions facade-actions"><button id="facadeAlignBtn">横线贯通</button><button id="facadeFocusBtn">设为重点</button><button id="facadeBackgroundBtn">设为背景</button><button id="facadeAutoBtn">自动主次</button><button id="facadeLessBtn">开放更少</button><button id="facadeMoreBtn">开放更多</button></div>
+    <div class="menu-label">这一格是否已经确定</div>
+    <div class="menu-actions convergence-actions"><button id="confirmRegionBtn">确认这一格</button><button id="exploreRegionBtn">继续探索</button><button id="nextLocalBtn">换一个可能</button></div>
+  </div>
+</section>
+
+<aside class="side">
+  <div class="card"><h3>本轮行为链</h3><div class="steps">
+    <div class="step" id="stepMultiTV"><div class="n">1</div><div><b>确认电视锚点</b><span>保留主要观看区域</span></div></div>
+    <div class="step" id="stepMultiDesk"><div class="n">2</div><div><b>加入书桌锚点</b><span>整组形成第二个明确功能区</span></div></div>
+    <div class="step" id="stepMultiRelation"><div class="n">3</div><div><b>建立锚点关系</b><span>自动、左侧、右侧或锁定位置</span></div></div>
+    <div class="step" id="stepMultiRetest"><div class="n">4</div><div><b>继续推拉复验</b><span>两类锚点保持，剩余空间重新分配</span></div></div>
+    <div id="stepConflict" class="hidden"></div><div id="stepResolve" class="hidden"></div><div id="stepConflictRetest" class="hidden"></div>
+    <div id="stepConvergence" class="hidden"></div><div id="stepAlternative" class="hidden"></div><div id="stepConvergenceRetest" class="hidden"></div>
+    <div id="stepWall" class="hidden"></div><div id="stepSeed" class="hidden"></div><div id="stepAnchor" class="hidden"></div><div id="stepRegion" class="hidden"></div><div id="stepRelation" class="hidden"></div><div id="stepRetest" class="hidden"></div><div id="stepStructure" class="hidden"></div><div id="stepStructureRetest" class="hidden"></div><div id="stepFacade" class="hidden"></div><div id="stepFacadeRetest" class="hidden"></div><div id="stepShape" class="hidden"></div>
+    <div id="stepSite" class="hidden"></div><div id="stepFit" class="hidden"></div><div id="stepSiteChange" class="hidden"></div><div id="stepSiteRetest" class="hidden"></div>
+  </div></div>
+
+  <div class="card anchor-card"><h3>多锚点状态</h3><div class="state">
+    <div class="row"><span>电视</span><strong id="multiTvState">等待点击</strong></div>
+    <div class="row"><span>书桌</span><strong id="multiDeskState">等待点击</strong></div>
+    <div class="row"><span>相对关系</span><strong id="multiRelationState">尚未建立</strong></div>
+    <div class="row"><span>可变储物段</span><strong id="multiFreeState">—</strong></div>
+    <div class="row"><span>锚点间距</span><strong id="multiGapState">—</strong></div>
+  </div><div class="relation-meter"><span id="multiRelationBar"></span></div></div>
+
+  <div class="card"><h3>场地与外框</h3><div class="state">
+    <div class="row"><span>柜体尺寸</span><strong><span id="widthState">—</span> × <span id="heightState">—</span></strong></div>
+    <div class="row"><span>门洞</span><strong id="doorState">—</strong></div>
+    <div class="row"><span>可用墙段</span><strong id="usableState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+  </div></div>
+
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>多锚点：</b>电视和书桌都是高优先级功能，不允许系统把其中一个当成普通柜格覆盖。<br>
+    <b>相对关系：</b>书桌可以自动选择电视左侧或右侧，也可以由用户明确固定。<br>
+    <b>实时重组：</b>拖动书桌、电视、门洞或外框时，两个锚点保持，剩余区域重新分配。<br>
+    <b>冲突：</b>空间不足时停在合法位置，并解释是哪个锚点或场地边界造成冲突。
+  </div></div>
+
+  <div class="hidden">
+    <span id="wallState"></span><span id="depthState"></span><span id="bottomState"></span><span id="backState"></span><span id="tvState"></span><span id="tvPositionState"></span>
+    <span id="leftState"></span><span id="rightState"></span><span id="relationState"></span><span id="selectionState"></span><span id="structureChoiceState"></span>
+    <span id="facadeDatumState"></span><span id="facadeRoleState"></span><span id="facadeOpenState"></span><span id="confirmedState"></span><span id="exploringState"></span><span id="generationState"></span><span id="decisionState"></span><span id="convergenceBar"></span>
+    <span id="targetWidthState"></span><span id="minWidthState"></span><span id="conflictReasonState"></span>
+    <span id="doorWidthState"></span><span id="doorClearState"></span><span id="siteFitState"></span>
+  </div>
+  <div class="footer">本轮只验证多个功能锚点及其相对关系，不增加材质、五金或生产规则。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="../formni-b03/b03.js"></script>
+<script src="../formni-b04/b04.js"></script>
+<script src="../formni-b05/b05.js"></script>
+<script src="../formni-b06/b06.js"></script>
+<script src="../formni-b07/b07.js"></script>
+<script src="../formni-b08/b08.js"></script>
+<script src="b09.js"></script>
+</body>
+</html>
