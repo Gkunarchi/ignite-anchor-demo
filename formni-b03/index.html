@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B03 功能分区与关系实验</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:190px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B03</div>
+  <div class="title">电视锚点 · 功能分区 · 合并 / 均分 / 锁定 · 外框变化后关系继续成立</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维功能分区实验"></canvas>
+  <div class="top-note"><b>B03 · 功能分区与关系分配</b><span>点墙 → 点电视 → 点左右功能区；建立关系后继续推拉</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>外框左右</div>
+    <div class="axis-chip"><i class="dot" style="background:var(--blue)"></i>外框上下</div>
+    <div class="axis-chip"><i class="dot" style="background:var(--green)"></i>外框前后</div>
+    <div class="axis-chip"><i class="line"></i>内部边界</div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions">
+      <button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button>
+      <button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button>
+      <button id="lockBtn">锁定宽度</button>
+    </div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card"><h3>行为链</h3><div class="steps">
+    <div class="step" id="stepWall"><div class="n">1</div><div><b>选择墙面</b><span>生成中性第一稿</span></div></div>
+    <div class="step" id="stepSeed"><div class="n">2</div><div><b>生成设计种子</b><span>获得可继续变化的整体</span></div></div>
+    <div class="step" id="stepAnchor"><div class="n">3</div><div><b>确认电视锚点</b><span>整组围绕电视重新组织</span></div></div>
+    <div class="step" id="stepRegion"><div class="n">4</div><div><b>建立功能区域</b><span>点左右区域，分割或合并</span></div></div>
+    <div class="step" id="stepRelation"><div class="n">5</div><div><b>建立持续关系</b><span>均分、锁定、拖动内部边界</span></div></div>
+    <div class="step" id="stepShape"><div class="n">6</div><div><b>继续推拉</b><span>外框变化后关系仍然成立</span></div></div>
+    <div class="step" id="stepRetest"><div class="n">7</div><div><b>关系已复验</b><span>电视或外框变化后仍保持</span></div></div>
+  </div></div>
+  <div class="card"><h3>当前状态</h3><div class="state">
+    <div class="row"><span>墙面</span><strong id="wallState">等待选择</strong></div>
+    <div class="row"><span>柜体宽度</span><strong id="widthState">—</strong></div>
+    <div class="row"><span>柜体高度</span><strong id="heightState">—</strong></div>
+    <div class="row"><span>柜体深度</span><strong id="depthState">—</strong></div>
+    <div class="row"><span>离地高度</span><strong id="bottomState">—</strong></div>
+    <div class="row"><span>背面关系</span><strong id="backState">—</strong></div>
+    <div class="row"><span>电视锚点</span><strong id="tvState">未确认</strong></div>
+    <div class="row"><span>电视位置</span><strong id="tvPositionState">—</strong></div>
+    <div class="row"><span>左侧区域</span><strong id="leftState">—</strong></div>
+    <div class="row"><span>右侧区域</span><strong id="rightState">—</strong></div>
+    <div class="row"><span>已建立关系</span><strong id="relationState">—</strong></div>
+    <div class="row"><span>当前选择</span><strong id="selectionState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+  </div></div>
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>分区：</b>把一个功能区拆成两个可继续调整的区域。<br>
+    <b>合并：</b>相邻区域重新成为一个完整功能。<br>
+    <b>均分：</b>建立持续关系；以后拉宽仍保持相等。<br>
+    <b>拖边界：</b>明确两个区域的比例，后续继续保持。<br>
+    <b>锁定：</b>固定这一格的实际宽度，其余区域吸收变化。
+  </div></div>
+  <div class="footer">本轮不增加新柜型，只验证区域关系能否被逐步建立，并在后续推拉中持续生效。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="b03.js"></script>
+</body>
+</html>
