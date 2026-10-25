@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B06 方案收敛</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:258px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-label{padding:8px 4px 6px;font-size:10px;color:#74807d;border-top:1px solid rgba(30,41,40,.08);margin-top:8px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.structure-actions button.active,.facade-actions button.active,.convergence-actions button.active{background:#32777c;color:#fff;border-color:#32777c}.structure-actions button.auto-active,.facade-actions button.auto-active{background:#dcebea;color:#245c60;border-color:rgba(50,119,124,.35)}
+.convergence-actions button.confirmed{background:#52766f;color:#fff;border-color:#52766f}.convergence-actions button.explore{background:#edf3f1;color:#315c58;border-color:rgba(49,92,88,.25)}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}.facade-line{width:13px;height:3px;border-radius:2px;background:#7c62a8}.decision-dot{width:8px;height:8px;border-radius:50%;background:#52766f}
+.side{overflow:auto;padding-right:2px}.side::-webkit-scrollbar{width:6px}.side::-webkit-scrollbar-thumb{background:rgba(30,41,40,.16);border-radius:6px}
+.actions .primary{background:#32777c;color:#fff;border-color:#32777c}.actions .primary:hover{background:#28676b}.convergence-meter{height:7px;background:#e4eae7;border-radius:999px;overflow:hidden;margin-top:8px}.convergence-meter span{display:block;height:100%;width:0;background:#52766f;transition:.18s}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B06</div>
+  <div class="title">方案收敛 · 确认局部 · 只重算未确认部分 · 继续推拉仍尊重已有决定</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="nextSchemeBtn" class="primary">换一版未确认</button>
+    <button id="confirmAllBtn">确认当前方案</button>
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维方案收敛实验"></canvas>
+  <div class="top-note"><b>B06 · 方案收敛</b><span>确认满意局部；换一版时只改变仍在探索的区域</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>外框</div>
+    <div class="axis-chip"><i class="line"></i>区域关系</div>
+    <div class="axis-chip"><i class="structure-dot"></i>结构</div>
+    <div class="axis-chip"><i class="facade-line"></i>立面</div>
+    <div class="axis-chip"><i class="decision-dot"></i>已确认</div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions">
+      <button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button>
+      <button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button>
+      <button id="lockBtn">锁定宽度</button>
+    </div>
+    <div class="menu-label">这一格怎样实现</div>
+    <div class="menu-actions structure-actions">
+      <button id="autoStructureBtn">系统判断</button><button id="closedStructureBtn">门柜</button>
+      <button id="openStructureBtn">开放架</button><button id="drawerStructureBtn">抽屉组</button>
+      <button id="mixedStructureBtn">门＋开放</button>
+    </div>
+    <div class="menu-label">整个立面怎样组织</div>
+    <div class="menu-actions facade-actions">
+      <button id="facadeAlignBtn">横线贯通</button><button id="facadeFocusBtn">设为重点</button>
+      <button id="facadeBackgroundBtn">设为背景</button><button id="facadeAutoBtn">自动主次</button>
+      <button id="facadeLessBtn">开放更少</button><button id="facadeMoreBtn">开放更多</button>
+    </div>
+    <div class="menu-label">这一格是否已经确定</div>
+    <div class="menu-actions convergence-actions">
+      <button id="confirmRegionBtn">确认这一格</button><button id="exploreRegionBtn">继续探索</button>
+      <button id="nextLocalBtn">换一个可能</button>
+    </div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card"><h3>本轮行为链</h3><div class="steps">
+    <div class="step" id="stepConvergence"><div class="n">1</div><div><b>确认满意局部</b><span>保存当前结构、主次和藏露关系</span></div></div>
+    <div class="step" id="stepAlternative"><div class="n">2</div><div><b>继续探索未定部分</b><span>换一版只改变尚未确认的区域</span></div></div>
+    <div class="step" id="stepConvergenceRetest"><div class="n">3</div><div><b>继续推拉复验</b><span>确认部分保持，其他部分重新适配</span></div></div>
+    <div class="step" id="stepWall" style="display:none"></div><div class="step" id="stepSeed" style="display:none"></div><div class="step" id="stepAnchor" style="display:none"></div><div class="step" id="stepRegion" style="display:none"></div><div class="step" id="stepRelation" style="display:none"></div><div class="step" id="stepRetest" style="display:none"></div><div class="step" id="stepStructure" style="display:none"></div><div class="step" id="stepStructureRetest" style="display:none"></div><div class="step" id="stepFacade" style="display:none"></div><div class="step" id="stepFacadeRetest" style="display:none"></div><div class="step" id="stepShape" style="display:none"></div>
+  </div></div>
+  <div class="card"><h3>收敛状态</h3><div class="state">
+    <div class="row"><span>已确认区域</span><strong id="confirmedState">0 / 0</strong></div>
+    <div class="row"><span>仍在探索</span><strong id="exploringState">0</strong></div>
+    <div class="row"><span>方案轮次</span><strong id="generationState">第 1 版</strong></div>
+    <div class="row"><span>当前选择</span><strong id="decisionState">—</strong></div>
+  </div><div class="convergence-meter"><span id="convergenceBar"></span></div></div>
+  <div class="card"><h3>当前设计</h3><div class="state">
+    <div class="row"><span>柜体尺寸</span><strong><span id="widthState">—</span> × <span id="heightState">—</span></strong></div>
+    <div class="row"><span>电视锚点</span><strong id="tvState">未确认</strong></div>
+    <div class="row"><span>区域关系</span><strong id="relationState">—</strong></div>
+    <div class="row"><span>区域结构</span><strong id="structureChoiceState">—</strong></div>
+    <div class="row"><span>贯通横线</span><strong id="facadeDatumState">—</strong></div>
+    <div class="row"><span>当前主次</span><strong id="facadeRoleState">—</strong></div>
+    <div class="row"><span>开放比例</span><strong id="facadeOpenState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+    <div style="display:none"><span id="wallState"></span><span id="depthState"></span><span id="bottomState"></span><span id="backState"></span><span id="tvPositionState"></span><span id="leftState"></span><span id="rightState"></span><span id="selectionState"></span></div>
+  </div></div>
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>确认：</b>保存这一格当前的结构、立面角色和开放比例；尺寸仍可跟随整体调整。<br>
+    <b>探索：</b>解除确认后，系统可以继续为这一区域寻找其他成立的方案。<br>
+    <b>换一版：</b>只重算未确认且仍由系统判断的区域；电视、外框、关系和明确选择不被推翻。<br>
+    <b>新意图优先：</b>对已确认区域再次分割或明确结构，会重新打开受影响区域。
+  </div></div>
+  <div class="footer">本轮不增加新造型能力，只验证“哪些决定已经固定、哪些仍能变化”，让方案真正逐步收敛。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="../formni-b03/b03.js"></script>
+<script src="../formni-b04/b04.js"></script>
+<script src="../formni-b05/b05.js"></script>
+<script src="b06.js"></script>
+</body>
+</html>
