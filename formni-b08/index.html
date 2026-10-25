@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B08 场地硬条件</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:258px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-label{padding:8px 4px 6px;font-size:10px;color:#74807d;border-top:1px solid rgba(30,41,40,.08);margin-top:8px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.structure-actions button.active,.facade-actions button.active,.convergence-actions button.active{background:#32777c;color:#fff;border-color:#32777c}.structure-actions button.auto-active,.facade-actions button.auto-active{background:#dcebea;color:#245c60;border-color:rgba(50,119,124,.35)}
+.convergence-actions button.confirmed{background:#52766f;color:#fff;border-color:#52766f}.convergence-actions button.explore{background:#edf3f1;color:#315c58;border-color:rgba(49,92,88,.25)}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}.decision-dot{width:8px;height:8px;border-radius:50%;background:#52766f}.site-dot{width:8px;height:8px;border-radius:50%;background:#b56c3f}
+.side{overflow:auto;padding-right:2px}.side::-webkit-scrollbar{width:6px}.side::-webkit-scrollbar-thumb{background:rgba(30,41,40,.16);border-radius:6px}
+.site-card{border-color:rgba(181,108,63,.22);background:rgba(255,251,247,.96)}
+.site-state{color:#9a552f}.priority-list{display:grid;gap:6px;font-size:11px;color:#65706d}.priority-list div{display:flex;gap:8px;align-items:center}.priority-list b{width:18px;height:18px;border-radius:6px;background:#edf1ef;display:grid;place-items:center;font-size:10px;color:#3c4946}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B08</div>
+  <div class="title">场地硬条件 · 识别门洞与安全边界 · 场地变化时整组实时重新适配</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="nextSchemeBtn">换一版未确认</button>
+    <button id="confirmAllBtn">确认当前方案</button>
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维场地硬条件实验"></canvas>
+  <div class="top-note"><b>B08 · 场地硬条件</b><span>墙面有门洞；拖动门洞模拟现场变化，柜体在安全边界内实时重组</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>柜体外框</div>
+    <div class="axis-chip"><i class="site-dot"></i>门洞 / 禁入区</div>
+    <div class="axis-chip"><i class="decision-dot"></i>已确认</div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions">
+      <button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button>
+      <button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button>
+      <button id="lockBtn">锁定宽度</button>
+    </div>
+    <div class="menu-label">这一格怎样实现</div>
+    <div class="menu-actions structure-actions">
+      <button id="autoStructureBtn">系统判断</button><button id="closedStructureBtn">门柜</button>
+      <button id="openStructureBtn">开放架</button><button id="drawerStructureBtn">抽屉组</button>
+      <button id="mixedStructureBtn">门＋开放</button>
+    </div>
+    <div class="menu-label">整个立面怎样组织</div>
+    <div class="menu-actions facade-actions">
+      <button id="facadeAlignBtn">横线贯通</button><button id="facadeFocusBtn">设为重点</button>
+      <button id="facadeBackgroundBtn">设为背景</button><button id="facadeAutoBtn">自动主次</button>
+      <button id="facadeLessBtn">开放更少</button><button id="facadeMoreBtn">开放更多</button>
+    </div>
+    <div class="menu-label">这一格是否已经确定</div>
+    <div class="menu-actions convergence-actions">
+      <button id="confirmRegionBtn">确认这一格</button><button id="exploreRegionBtn">继续探索</button>
+      <button id="nextLocalBtn">换一个可能</button>
+    </div>
+  </div>
+  <div id="conflictPanel" style="display:none"><span id="conflictTitle"></span><span id="conflictText"></span><button id="adaptConflictBtn"></button><button id="releaseConflictBtn"></button><button id="keepConflictBtn"></button></div>
+</section>
+<aside class="side">
+  <div class="card"><h3>本轮行为链</h3><div class="steps">
+    <div class="step" id="stepSite"><div class="n">1</div><div><b>识别场地开口</b><span>门洞和安全边界先于柜体方案存在</span></div></div>
+    <div class="step" id="stepFit"><div class="n">2</div><div><b>第一稿贴合可用墙面</b><span>外框只在合法墙段内生成</span></div></div>
+    <div class="step" id="stepSiteChange"><div class="n">3</div><div><b>拖动门洞模拟现场变化</b><span>外框、分区和立面实时重新分配</span></div></div>
+    <div class="step" id="stepSiteRetest"><div class="n">4</div><div><b>检查已确认内容</b><span>电视锚点和已有决定继续保留</span></div></div>
+    <div class="step" id="stepConvergence" style="display:none"></div><div class="step" id="stepAlternative" style="display:none"></div><div class="step" id="stepConvergenceRetest" style="display:none"></div><div class="step" id="stepConflict" style="display:none"></div><div class="step" id="stepResolve" style="display:none"></div><div class="step" id="stepConflictRetest" style="display:none"></div><div class="step" id="stepWall" style="display:none"></div><div class="step" id="stepSeed" style="display:none"></div><div class="step" id="stepAnchor" style="display:none"></div><div class="step" id="stepRegion" style="display:none"></div><div class="step" id="stepRelation" style="display:none"></div><div class="step" id="stepRetest" style="display:none"></div><div class="step" id="stepStructure" style="display:none"></div><div class="step" id="stepStructureRetest" style="display:none"></div><div class="step" id="stepFacade" style="display:none"></div><div class="step" id="stepFacadeRetest" style="display:none"></div><div class="step" id="stepShape" style="display:none"></div>
+  </div></div>
+  <div class="card site-card"><h3>场地状态</h3><div class="state">
+    <div class="row"><span>门洞中心</span><strong id="doorState" class="site-state">—</strong></div>
+    <div class="row"><span>门洞宽度</span><strong id="doorWidthState">900 mm</strong></div>
+    <div class="row"><span>安全边界</span><strong id="doorClearState">—</strong></div>
+    <div class="row"><span>当前可用墙段</span><strong id="usableState">—</strong></div>
+    <div class="row"><span>适配状态</span><strong id="siteFitState">等待生成</strong></div>
+  </div></div>
+  <div class="card"><h3>当前设计</h3><div class="state">
+    <div class="row"><span>柜体尺寸</span><strong><span id="widthState">—</span> × <span id="heightState">—</span></strong></div>
+    <div class="row"><span>电视锚点</span><strong id="tvState">未确认</strong></div>
+    <div class="row"><span>已确认区域</span><strong id="confirmedState">0 / 0</strong></div>
+    <div class="row"><span>仍在探索</span><strong id="exploringState">0</strong></div>
+    <div class="row"><span>区域关系</span><strong id="relationState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+    <div style="display:none"><span id="generationState"></span><span id="decisionState"></span><span id="convergenceBar"></span><span id="targetWidthState"></span><span id="minWidthState"></span><span id="conflictReasonState"></span><span id="structureChoiceState"></span><span id="facadeDatumState"></span><span id="facadeRoleState"></span><span id="facadeOpenState"></span><span id="wallState"></span><span id="depthState"></span><span id="bottomState"></span><span id="backState"></span><span id="tvPositionState"></span><span id="leftState"></span><span id="rightState"></span><span id="selectionState"></span></div>
+  </div></div>
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>硬条件先行：</b>门洞及其安全余量先形成禁入区，柜体不能越过。<br>
+    <b>实时适配：</b>拖动门洞时，外框立即贴合新的可用墙段，区域关系随之重新分配。<br>
+    <b>不改身份：</b>电视、锁定尺寸、明确结构和已确认局部继续保留。<br>
+    <b>场地高优先级：</b>系统审美和自动造型必须让位于建筑开口。
+  </div></div>
+  <div class="footer">本轮只加入一个门洞硬条件，用来验证“真实场地变化如何改写方案”。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="../formni-b03/b03.js"></script>
+<script src="../formni-b04/b04.js"></script>
+<script src="../formni-b05/b05.js"></script>
+<script src="../formni-b06/b06.js"></script>
+<script src="../formni-b07/b07.js"></script>
+<script src="b08.js"></script>
+</body>
+</html>
