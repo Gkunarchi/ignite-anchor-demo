@@ -35,7 +35,7 @@ function b07Ensure(){
 }
 function b07Protected(reg){
   b07Region(reg);
-  return reg.lockedWidth!=null||reg.confirmed||(reg.structure||'auto')!=='auto'||reg.origin==='user';
+  return reg.lockedWidth!=null||reg.confirmed||(reg.structure||'auto')!=='auto'||(reg.facadeRole||'auto')!=='auto'||Math.abs((reg.openShare==null?.44:reg.openShare)-.44)>.001||reg.origin==='user';
 }
 function b07RegMin(reg){
   b07Region(reg);
@@ -193,6 +193,31 @@ b03Split.onclick=()=>{
     state.layout[x.sideName].userTopology=true;
     draw();
   }
+};
+
+const b07BaseEqual=b03Equal.onclick;
+b03Equal.onclick=()=>{
+  const x=b06Selected();
+  b07BaseEqual();
+  if(x){
+    state.layout[x.sideName].regions.forEach(reg=>{reg.origin='user';});
+    state.layout[x.sideName].userTopology=true;
+    draw();
+  }
+};
+const b07BaseMergeL=b03MergeL.onclick;
+b03MergeL.onclick=()=>{
+  const x=b06Selected();
+  b07BaseMergeL();
+  const y=b06Selected();
+  if(y){y.reg.origin='user';state.layout[y.sideName].userTopology=true;draw();}
+};
+const b07BaseMergeR=b03MergeR.onclick;
+b03MergeR.onclick=()=>{
+  const x=b06Selected();
+  b07BaseMergeR();
+  const y=b06Selected();
+  if(y){y.reg.origin='user';state.layout[y.sideName].userTopology=true;draw();}
 };
 
 // 拖动外框后，在原处理结果之上执行约束检查。
