@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>Formni · B07 约束冲突与回退</title>
+<link rel="stylesheet" href="../formni-b02/style.css" />
+<style>
+.region-menu{position:absolute;display:none;width:258px;padding:10px;border-radius:14px;background:rgba(250,251,249,.97);border:1px solid rgba(30,41,40,.12);box-shadow:0 18px 48px rgba(28,42,39,.2);z-index:20}
+.region-menu.show{display:block}.menu-title{font-size:11px;font-weight:750;padding:2px 4px 8px}.menu-label{padding:8px 4px 6px;font-size:10px;color:#74807d;border-top:1px solid rgba(30,41,40,.08);margin-top:8px}
+.menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.menu-actions button{height:32px;padding:0 7px;font-size:11px;border-radius:9px}
+.structure-actions button.active,.facade-actions button.active,.convergence-actions button.active{background:#32777c;color:#fff;border-color:#32777c}.structure-actions button.auto-active,.facade-actions button.auto-active{background:#dcebea;color:#245c60;border-color:rgba(50,119,124,.35)}
+.convergence-actions button.confirmed{background:#52766f;color:#fff;border-color:#52766f}.convergence-actions button.explore{background:#edf3f1;color:#315c58;border-color:rgba(49,92,88,.25)}
+.line{width:12px;height:3px;border-radius:2px;background:#d69235}.structure-dot{width:8px;height:8px;border-radius:50%;background:#5f817b}.facade-line{width:13px;height:3px;border-radius:2px;background:#7c62a8}.decision-dot{width:8px;height:8px;border-radius:50%;background:#52766f}.constraint-dot{width:8px;height:8px;border-radius:50%;background:#bd5147}
+.side{overflow:auto;padding-right:2px}.side::-webkit-scrollbar{width:6px}.side::-webkit-scrollbar-thumb{background:rgba(30,41,40,.16);border-radius:6px}
+.actions .primary{background:#32777c;color:#fff;border-color:#32777c}.actions .primary:hover{background:#28676b}.convergence-meter{height:7px;background:#e4eae7;border-radius:999px;overflow:hidden;margin-top:8px}.convergence-meter span{display:block;height:100%;width:0;background:#52766f;transition:.18s}
+.conflict-panel{position:absolute;left:50%;top:72px;transform:translate(-50%,-12px);width:min(520px,calc(100% - 36px));padding:14px 15px;border-radius:15px;background:rgba(255,249,247,.97);border:1px solid rgba(189,81,71,.35);box-shadow:0 18px 50px rgba(95,35,31,.18);z-index:25;opacity:0;pointer-events:none;transition:.18s}
+.conflict-panel.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}.conflict-head{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:780;color:#8d332c}.conflict-text{font-size:11px;line-height:1.55;color:#6f4b47;margin:7px 0 10px}.conflict-actions{display:flex;gap:7px;flex-wrap:wrap}.conflict-actions button{height:31px;font-size:11px}.conflict-actions .danger{background:#bd5147;color:#fff;border-color:#bd5147}.conflict-actions .soft{background:#fff2ef;color:#8d332c;border-color:rgba(189,81,71,.25)}
+.conflict-card{border-color:rgba(189,81,71,.22);background:rgba(255,250,248,.96)}.conflict-value{color:#a33e35}.priority-list{display:grid;gap:6px;font-size:11px;color:#65706d}.priority-list div{display:flex;gap:8px;align-items:center}.priority-list b{width:18px;height:18px;border-radius:6px;background:#edf1ef;display:grid;place-items:center;font-size:10px;color:#3c4946}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">FORMNI / B07</div>
+  <div class="title">约束冲突 · 不偷偷压缩已确认内容 · 用户决定是否回退</div>
+  <div class="spacer"></div>
+  <div class="actions">
+    <button id="nextSchemeBtn">换一版未确认</button>
+    <button id="confirmAllBtn">确认当前方案</button>
+    <button id="undoBtn" title="撤销">↶</button><button id="redoBtn" title="重做">↷</button>
+    <button id="viewBtn">重置视角</button><button id="resetBtn">重新开始</button>
+  </div>
+</header>
+<main>
+<section class="viewport" id="viewport">
+  <canvas id="canvas" aria-label="Formni 三维约束冲突实验"></canvas>
+  <div class="top-note"><b>B07 · 约束冲突与局部回退</b><span>把外框拉得过小时，系统先保护锚点和明确决定，再解释冲突</span></div>
+  <div class="prompt" id="prompt">移动到墙面，点击生成第一稿</div>
+  <div class="axis-legend">
+    <div class="axis-chip"><i class="dot" style="background:var(--red)"></i>外框</div>
+    <div class="axis-chip"><i class="line"></i>区域关系</div>
+    <div class="axis-chip"><i class="structure-dot"></i>结构</div>
+    <div class="axis-chip"><i class="decision-dot"></i>已确认</div>
+    <div class="axis-chip"><i class="constraint-dot"></i>冲突目标</div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <div class="conflict-panel" id="conflictPanel">
+    <div class="conflict-head"><i class="constraint-dot"></i><span id="conflictTitle">目标尺寸与当前决定冲突</span></div>
+    <div class="conflict-text" id="conflictText">系统已停在最后一个合法尺寸。</div>
+    <div class="conflict-actions">
+      <button id="adaptConflictBtn" class="danger">只调整未确认部分</button>
+      <button id="releaseConflictBtn" class="soft">放开一个已确认</button>
+      <button id="keepConflictBtn">保留当前尺寸</button>
+    </div>
+  </div>
+  <div class="region-menu" id="regionMenu">
+    <div class="menu-title" id="menuTitle">功能区</div>
+    <div class="menu-actions">
+      <button id="splitBtn">分成两格</button><button id="mergeLeftBtn">向左合并</button>
+      <button id="mergeRightBtn">向右合并</button><button id="equalBtn">整侧均分</button>
+      <button id="lockBtn">锁定宽度</button>
+    </div>
+    <div class="menu-label">这一格怎样实现</div>
+    <div class="menu-actions structure-actions">
+      <button id="autoStructureBtn">系统判断</button><button id="closedStructureBtn">门柜</button>
+      <button id="openStructureBtn">开放架</button><button id="drawerStructureBtn">抽屉组</button>
+      <button id="mixedStructureBtn">门＋开放</button>
+    </div>
+    <div class="menu-label">整个立面怎样组织</div>
+    <div class="menu-actions facade-actions">
+      <button id="facadeAlignBtn">横线贯通</button><button id="facadeFocusBtn">设为重点</button>
+      <button id="facadeBackgroundBtn">设为背景</button><button id="facadeAutoBtn">自动主次</button>
+      <button id="facadeLessBtn">开放更少</button><button id="facadeMoreBtn">开放更多</button>
+    </div>
+    <div class="menu-label">这一格是否已经确定</div>
+    <div class="menu-actions convergence-actions">
+      <button id="confirmRegionBtn">确认这一格</button><button id="exploreRegionBtn">继续探索</button>
+      <button id="nextLocalBtn">换一个可能</button>
+    </div>
+  </div>
+</section>
+<aside class="side">
+  <div class="card"><h3>本轮行为链</h3><div class="steps">
+    <div class="step" id="stepConflict"><div class="n">1</div><div><b>尝试不合法尺寸</b><span>外框继续跟手，但正式模型停在合法边界</span></div></div>
+    <div class="step" id="stepResolve"><div class="n">2</div><div><b>解释冲突</b><span>说明是哪条锚点、锁定或确认关系在阻止</span></div></div>
+    <div class="step" id="stepConflictRetest"><div class="n">3</div><div><b>显式回退</b><span>只在用户选择后，才释放较弱条件重新求解</span></div></div>
+    <div class="step" id="stepConvergence" style="display:none"></div><div class="step" id="stepAlternative" style="display:none"></div><div class="step" id="stepConvergenceRetest" style="display:none"></div><div class="step" id="stepWall" style="display:none"></div><div class="step" id="stepSeed" style="display:none"></div><div class="step" id="stepAnchor" style="display:none"></div><div class="step" id="stepRegion" style="display:none"></div><div class="step" id="stepRelation" style="display:none"></div><div class="step" id="stepRetest" style="display:none"></div><div class="step" id="stepStructure" style="display:none"></div><div class="step" id="stepStructureRetest" style="display:none"></div><div class="step" id="stepFacade" style="display:none"></div><div class="step" id="stepFacadeRetest" style="display:none"></div><div class="step" id="stepShape" style="display:none"></div>
+  </div></div>
+  <div class="card conflict-card"><h3>约束状态</h3><div class="state">
+    <div class="row"><span>用户目标宽度</span><strong id="targetWidthState">—</strong></div>
+    <div class="row"><span>当前合法下限</span><strong id="minWidthState">—</strong></div>
+    <div class="row"><span>冲突原因</span><strong id="conflictReasonState" class="conflict-value">无</strong></div>
+  </div></div>
+  <div class="card"><h3>处理优先级</h3><div class="priority-list">
+    <div><b>1</b><span>墙体与电视净空等硬条件</span></div>
+    <div><b>2</b><span>用户锁定和明确结构</span></div>
+    <div><b>3</b><span>已经确认的局部设计</span></div>
+    <div><b>4</b><span>仍在探索的区域与系统偏好</span></div>
+  </div></div>
+  <div class="card"><h3>当前设计</h3><div class="state">
+    <div class="row"><span>柜体尺寸</span><strong><span id="widthState">—</span> × <span id="heightState">—</span></strong></div>
+    <div class="row"><span>已确认区域</span><strong id="confirmedState">0 / 0</strong></div>
+    <div class="row"><span>仍在探索</span><strong id="exploringState">0</strong></div>
+    <div class="row"><span>区域关系</span><strong id="relationState">—</strong></div>
+    <div class="row"><span>当前结构</span><strong id="structureState">尚未生成</strong></div>
+    <div style="display:none"><span id="generationState"></span><span id="decisionState"></span><span id="convergenceBar"></span><span id="tvState"></span><span id="structureChoiceState"></span><span id="facadeDatumState"></span><span id="facadeRoleState"></span><span id="facadeOpenState"></span><span id="wallState"></span><span id="depthState"></span><span id="bottomState"></span><span id="backState"></span><span id="tvPositionState"></span><span id="leftState"></span><span id="rightState"></span><span id="selectionState"></span></div>
+  </div></div>
+  <div class="card"><h3>本轮规则</h3><div class="rule">
+    <b>先保护：</b>拖动过程中先保护电视净空、锁定宽度、明确结构和已确认区域。<br>
+    <b>再解释：</b>目标不成立时显示目标虚线、合法下限和具体冲突原因。<br>
+    <b>不偷偷回退：</b>系统不会自动解除锁定或确认；只有用户点选处理方案后才重新求解。<br>
+    <b>局部适应：</b>能通过合并未确认区域解决时，只改未确认部分。
+  </div></div>
+  <div class="footer">本轮只验证冲突处理。材质、五金和真实生产规则仍不进入。</div>
+</aside>
+</main>
+</div>
+<script src="../formni-b02/app-1.js"></script>
+<script src="../formni-b02/app-2.js"></script>
+<script src="../formni-b02/app-3.js"></script>
+<script src="../formni-b02/app-4.js"></script>
+<script src="../formni-b03/b03.js"></script>
+<script src="../formni-b04/b04.js"></script>
+<script src="../formni-b05/b05.js"></script>
+<script src="../formni-b06/b06.js"></script>
+<script src="b07.js"></script>
+</body>
+</html>
