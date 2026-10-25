@@ -1,3 +1,4 @@
+'use strict';
 function localPos(ev){const r=canvas.getBoundingClientRect();return[ev.clientX-r.left,ev.clientY-r.top]}
   function hitHandle(pt){let best=null,bestD=19;for(const h of handleData()){const d=dist2(pt,h.screen);if(d<bestD){best=h;bestD=d}}return best}
   function overWall(pt){const p=wallPolygon();return p.length===4&&pointInPoly(pt,p)}
@@ -60,13 +61,13 @@ function localPos(ev){const r=canvas.getBoundingClientRect();return[ev.clientX-r
       }
       pointer.last=pt;return;
     }
-    const tvHit=overTV(pt);const h=state.cabinet&&!tvHit?hitHandle(pt):null;state.activeHandle=h?h.id:null;
+    const h=state.cabinet?hitHandle(pt):null;const tvHit=!h&&overTV(pt);state.activeHandle=h?h.id:null;
     const hw=!state.cabinet&&overWall(pt);const changed=hw!==state.hoverWall||tvHit!==state.hoverTV;state.hoverWall=hw;state.hoverTV=tvHit;if(changed)draw();
     canvas.style.cursor=tvHit?(state.tv.anchor?'move':'pointer'):(h?cursorForHandle(h.id):(!state.cabinet&&hw?'pointer':'grab'));
     updateUI();
   });
   canvas.addEventListener('pointerdown',ev=>{
-    if(anim)return;canvas.setPointerCapture(ev.pointerId);const pt=localPos(ev);const tvHit=overTV(pt);const h=state.cabinet&&!tvHit?hitHandle(pt):null;
+    if(anim)return;canvas.setPointerCapture(ev.pointerId);const pt=localPos(ev);const h=state.cabinet?hitHandle(pt):null;const tvHit=!h&&overTV(pt);
     pointer={down:true,start:pt,last:pt,mode:null,moved:false,handle:null,startCabinet:null,startTV:null,startCamera:null,clickWall:false,preSnapshot:null,wasAnchor:state.tv.anchor};state.snap=null;
     if(state.cabinet&&tvHit){pointer.mode='tv';pointer.startTV=clone(state.tv);pointer.preSnapshot=snapshot();state.tv.anchor=true;state.hasShaped=true;canvas.style.cursor='move';}
     else if(h){pointer.mode='resize';pointer.handle=h.id;pointer.startCabinet=clone(state.cabinet);pointer.preSnapshot=snapshot();state.activeHandle=h.id;canvas.style.cursor=cursorForHandle(h.id);}
